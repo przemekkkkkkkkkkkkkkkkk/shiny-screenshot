@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#353557"/><stop offset=".55" stop-color="#18182f"/><stop offset="1" stop-color="#10101d"/></linearGradient>
+    <linearGradient id="edge" x2=".2" y2="1"><stop stop-color="#a7a7ce" stop-opacity=".45"/><stop offset=".5" stop-color="#63637c" stop-opacity=".12"/><stop offset="1" stop-color="#080812" stop-opacity=".8"/></linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#80eed7"/><stop offset=".48" stop-color="#6965ec"/><stop offset="1" stop-color="#be8cf7"/></linearGradient>
+    <radialGradient id="mint" cx=".08" cy=".15" r=".9"><stop stop-color="#adffe8"/><stop offset="1" stop-color="#63e7cd" stop-opacity="0"/></radialGradient>
+    <radialGradient id="violet" cx=".85" cy=".95" r=".85"><stop stop-color="#e7aaff"/><stop offset="1" stop-color="#9b62f2" stop-opacity="0"/></radialGradient>
+    <radialGradient id="blue" cx=".55" cy=".4" r=".6"><stop stop-color="#4f46df"/><stop offset="1" stop-color="#4f46df" stop-opacity="0"/></radialGradient>
+    <filter id="shadow" x="-.25" y="-.25" width="1.5" height="1.6"><feDropShadow dx="0" dy="22" stdDeviation="18" flood-color="#080818" flood-opacity=".3"/></filter>
+    <filter id="glow" x="-.5" y="-.5" width="2" height="2"><feGaussianBlur stdDeviation="36"/></filter>
+    <clipPath id="clip"><rect x="259" y="304" width="506" height="416" rx="38"/></clipPath>
+  </defs>
+  <path d="M288 100H736C861 100 924 163 924 288V736C924 861 861 924 736 924H288C163 924 100 861 100 736V288C100 163 163 100 288 100Z" fill="#202034" filter="url(#shadow)"/>
+  <path d="M288 102H736C860 102 922 164 922 288V736C922 860 860 922 736 922H288C164 922 102 860 102 736V288C102 164 164 102 288 102Z" fill="none" stroke="url(#edge)" stroke-width="3"/>
+  <rect x="269" y="314" width="486" height="396" rx="52" fill="#7770ff" opacity=".3" filter="url(#glow)"/>
+  <g clip-path="url(#clip)"><rect x="259" y="304" width="506" height="416" fill="url(#card)"/><rect x="259" y="304" width="506" height="416" fill="url(#mint)"/><rect x="259" y="304" width="506" height="416" fill="url(#blue)"/><rect x="259" y="304" width="506" height="416" fill="url(#violet)"/></g>
+  <rect x="230" y="275" width="564" height="474" rx="14" fill="none" stroke="#ffd60a" stroke-width="24"/>
+  <g fill="#ffd60a"><rect x="198" y="243" width="64" height="64" rx="13"/><rect x="762" y="243" width="64" height="64" rx="13"/><rect x="198" y="717" width="64" height="64" rx="13"/><rect x="762" y="717" width="64" height="64" rx="13"/></g>
+</svg>
