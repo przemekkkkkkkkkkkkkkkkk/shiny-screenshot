@@ -1,0 +1,172 @@
+{
+  "repo": ".",
+  "status": "Complete; uncommitted; no branch, commit or push; prototype untouched",
+  "concepts": {
+    "app_icon": "824\u00d7824 indigo squircle on a transparent 1024\u00d71024 canvas, with soft shadow, luminous mesh card and yellow selection marquee; thicker stroke for 16/32 pixel output.",
+    "menu_icon": "Black cornered selection frame with a central glint; vector template PDF at 18 pt.",
+    "Silk": "Soft periwinkle and ultramarine satin waves.",
+    "Prism": "Luminous mint/lavender glass blobs with refracted light.",
+    "Solstice": "Warm peach dunes with violet dusk shadows.",
+    "Boreal": "Mint and teal aurora ribbons over midnight indigo.",
+    "banner": "2400\u00d71200 editorial hero with the actual native SwiftUI selection, dimming, annotation and toolbar over a synthetic notes app; Silk desktop wallpaper."
+  },
+  "wiring": {
+    "project.yml": "ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon. Existing ShinyScreenshot source directory automatically includes the catalog.",
+    "App.swift": "MenuBarExtra(\"Shiny Screenshot\", image: \"MenuBarIcon\").",
+    "Drawing.swift": "Four new Backdrop cases resolve Image(name), resize/scaledToFill in GeometryReader, constrain and clip to the available frame. ComposedView clips to its fixed canvas. Existing cases retained.",
+    "OverlayView.swift": "No change needed: existing 38 pt tile frames, rounded clipping and Backdrop.allCases grid automatically show all four wallpapers.",
+    "README.md": "Existing icon.svg reference now displays replacement art; added assets/banner.jpg near the top.",
+    "scripts": "All generator and renderer code lives under assets/tools, outside the app source target."
+  },
+  "files_modified": [
+    "README.md",
+    "assets/icon.svg",
+    "ShinyScreenshot/App.swift",
+    "ShinyScreenshot/Drawing.swift",
+    "project.yml"
+  ],
+  "files_created": [
+    "ShinyScreenshot/Assets.xcassets/AppIcon.appiconset/Contents.json",
+    "ShinyScreenshot/Assets.xcassets/AppIcon.appiconset/icon_128x128@1x.png",
+    "ShinyScreenshot/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png",
+    "ShinyScreenshot/Assets.xcassets/AppIcon.appiconset/icon_16x16@1x.png",
+    "ShinyScreenshot/Assets.xcassets/AppIcon.appiconset/icon_16x16@2x.png",
+    "ShinyScreenshot/Assets.xcassets/AppIcon.appiconset/icon_256x256@1x.png",
+    "ShinyScreenshot/Assets.xcassets/AppIcon.appiconset/icon_256x256@2x.png",
+    "ShinyScreenshot/Assets.xcassets/AppIcon.appiconset/icon_32x32@1x.png",
+    "ShinyScreenshot/Assets.xcassets/AppIcon.appiconset/icon_32x32@2x.png",
+    "ShinyScreenshot/Assets.xcassets/AppIcon.appiconset/icon_512x512@1x.png",
+    "ShinyScreenshot/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png",
+    "ShinyScreenshot/Assets.xcassets/Contents.json",
+    "ShinyScreenshot/Assets.xcassets/MenuBarIcon.imageset/Contents.json",
+    "ShinyScreenshot/Assets.xcassets/MenuBarIcon.imageset/MenuBarIcon.pdf",
+    "ShinyScreenshot/Assets.xcassets/Wallpapers/Boreal.imageset/Boreal.jpg",
+    "ShinyScreenshot/Assets.xcassets/Wallpapers/Boreal.imageset/Contents.json",
+    "ShinyScreenshot/Assets.xcassets/Wallpapers/Contents.json",
+    "ShinyScreenshot/Assets.xcassets/Wallpapers/Prism.imageset/Contents.json",
+    "ShinyScreenshot/Assets.xcassets/Wallpapers/Prism.imageset/Prism.jpg",
+    "ShinyScreenshot/Assets.xcassets/Wallpapers/Silk.imageset/Contents.json",
+    "ShinyScreenshot/Assets.xcassets/Wallpapers/Silk.imageset/Silk.jpg",
+    "ShinyScreenshot/Assets.xcassets/Wallpapers/Solstice.imageset/Contents.json",
+    "ShinyScreenshot/Assets.xcassets/Wallpapers/Solstice.imageset/Solstice.jpg",
+    "assets/banner.jpg",
+    "assets/manifest.json",
+    "assets/previews/app-icon-1024.png",
+    "assets/previews/background-picker.png",
+    "assets/previews/banner.png",
+    "assets/previews/export-boreal.png",
+    "assets/previews/export-prism.png",
+    "assets/previews/export-silk.png",
+    "assets/previews/export-solstice.png",
+    "assets/previews/icon-contact-sheet.png",
+    "assets/previews/in-place.png",
+    "assets/previews/menu-bar-18.png",
+    "assets/previews/menu-bar-36.png",
+    "assets/previews/native-contact-sheet.png",
+    "assets/previews/sample-screen.png",
+    "assets/previews/tile-boreal.png",
+    "assets/previews/tile-prism.png",
+    "assets/previews/tile-silk.png",
+    "assets/previews/tile-solstice.png",
+    "assets/previews/wallpapers.png",
+    "assets/tools/make-banner.py",
+    "assets/tools/menu-bar-icon.svg",
+    "assets/tools/prepare-assets.py",
+    "assets/tools/render-previews.swift",
+    "assets/tools/wallpaper-prompts.json"
+  ],
+  "generation": {
+    "method": "Built-in image_gen, one request per wallpaper; precise SVG/code for icons and native UI banner composition.",
+    "prompts": "assets/tools/wallpaper-prompts.json",
+    "wallpaper_source_resolution": [
+      1586,
+      992
+    ],
+    "wallpaper_delivery_resolution": [
+      2880,
+      1800
+    ],
+    "resampling": "Lanczos center crop/resize",
+    "jpeg_quality": 85,
+    "color_space": "Embedded sRGB ICC for all catalog raster art"
+  },
+  "wallpapers": [
+    {
+      "name": "Boreal",
+      "path": "ShinyScreenshot/Assets.xcassets/Wallpapers/Boreal.imageset/Boreal.jpg",
+      "pixels": [
+        2880,
+        1800
+      ],
+      "bytes": 292797
+    },
+    {
+      "name": "Prism",
+      "path": "ShinyScreenshot/Assets.xcassets/Wallpapers/Prism.imageset/Prism.jpg",
+      "pixels": [
+        2880,
+        1800
+      ],
+      "bytes": 278462
+    },
+    {
+      "name": "Silk",
+      "path": "ShinyScreenshot/Assets.xcassets/Wallpapers/Silk.imageset/Silk.jpg",
+      "pixels": [
+        2880,
+        1800
+      ],
+      "bytes": 238891
+    },
+    {
+      "name": "Solstice",
+      "path": "ShinyScreenshot/Assets.xcassets/Wallpapers/Solstice.imageset/Solstice.jpg",
+      "pixels": [
+        2880,
+        1800
+      ],
+      "bytes": 313607
+    }
+  ],
+  "verification": [
+    {
+      "command": "xcodegen generate && xcodebuild -project ShinyScreenshot.xcodeproj -scheme ShinyScreenshot -derivedDataPath build -allowProvisioningUpdates test",
+      "result": "TEST SUCCEEDED; 5 GeometryTests passed. Only warnings: AppIntents metadata extraction skipped because AppIntents.framework is not a dependency.",
+      "log": "/tmp/shiny-assets-test.log",
+      "xcresult": "build/Logs/Test/Test-ShinyScreenshot-2026.10.14_21-00-56-+0200.xcresult"
+    },
+    {
+      "command": "ls -lh build/Build/Products/Debug/ShinyScreenshot.app/Contents/Resources; plutil -p build/Build/Products/Debug/ShinyScreenshot.app/Contents/Info.plist",
+      "result": "AppIcon.icns (42 KB) and Assets.car (1.7 MB) present; CFBundleIconFile and CFBundleIconName both AppIcon."
+    },
+    {
+      "command": "python3 assets/tools/prepare-assets.py <Silk-source.png> <Prism-source.png> <Solstice-source.png> <Boreal-source.png>",
+      "result": "Ten correctly sized macOS app icon PNGs, transparent RGBA, embedded sRGB; four 2880\u00d71800 RGB JPEGs with embedded sRGB, each below 1.5 MB. Without arguments, rebuilds icons/previews from existing catalog wallpapers."
+    },
+    {
+      "command": "python3 assets/tools/make-banner.py",
+      "result": "Creates the synthetic sample-screen.png; after native rendering creates banner.jpg and banner.png."
+    },
+    {
+      "command": "xcrun swiftc -parse-as-library -swift-version 6 -default-isolation MainActor ShinyScreenshot/Capture.swift ShinyScreenshot/Session.swift ShinyScreenshot/Geometry.swift ShinyScreenshot/Drawing.swift ShinyScreenshot/OverlayView.swift assets/tools/render-previews.swift -o build/AssetPreview.app/Contents/MacOS/AssetPreview && build/AssetPreview.app/Contents/MacOS/AssetPreview \"$PWD\"",
+      "prerequisite": "Create build/AssetPreview.app/Contents/{MacOS,Resources}, copy built app Assets.car into Resources, and provide minimal Info.plist with CFBundleExecutable=AssetPreview, CFBundlePackageType=APPL, CFBundleIdentifier=com.przemek.ShinyScreenshot.AssetPreview and LSUIElement=true.",
+      "result": "PASS: all 16 backdrops render at fixed 56\u00d738 pt tile dimensions and expected export canvas dimensions; all four wallpaper assets load; MenuBarIcon isTemplate is true."
+    },
+    {
+      "command": "git diff --check",
+      "result": "Passed."
+    },
+    {
+      "command": "Visual inspection via view_image",
+      "result": "Inspected icon at 16/32/64/128/256/512/1024; menu image against light/dark; all wallpaper JPEGs individually; banner JPEG; picker snapshot; native export/tile contact sheet. Fixed dark icon banding, strengthened small icon marquee and corrected native picker preview rendering."
+    }
+  ],
+  "previews": [
+    "assets/previews/icon-contact-sheet.png",
+    "assets/previews/wallpapers.png",
+    "assets/previews/banner.png",
+    "assets/previews/background-picker.png",
+    "assets/previews/native-contact-sheet.png",
+    "assets/previews/app-icon-1024.png"
+  ]
+}

@@ -1,0 +1,53 @@
+name: ShinyScreenshot
+options:
+  bundleIdPrefix: com.przemek
+  deploymentTarget:
+    macOS: "15.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+    SWIFT_APPROACHABLE_CONCURRENCY: YES
+    DEVELOPMENT_TEAM: <team ID>
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: 2.9.0
+targets:
+  ShinyScreenshot:
+    type: application
+    platform: macOS
+    sources: [ShinyScreenshot]
+    dependencies:
+      - package: Sparkle
+    scheme:
+      testTargets: [ShinyScreenshotTests]
+    info:
+      path: ShinyScreenshot/Info.plist
+      properties:
+        CFBundleDisplayName: Shiny Screenshot
+        LSUIElement: true
+        LSApplicationCategoryType: public.app-category.productivity
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        # Sparkle: release.sh publishes appcast.xml with each GitHub release; the key signs every update.
+        SUFeedURL: https://github.com/przemekkkkkkkkkkkkkkkkk/shiny-screenshot/releases/latest/download/appcast.xml
+        SUPublicEDKey: 9SMZArnPP0PbQQ+nBlnTM20LplOTGLSgAr+9sRwrB7M=
+        SUEnableAutomaticChecks: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.przemek.ShinyScreenshot
+        MARKETING_VERSION: "0.2.1"
+        CURRENT_PROJECT_VERSION: "3"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  ShinyScreenshotTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [ShinyScreenshotTests]
+    dependencies:
+      - target: ShinyScreenshot
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES

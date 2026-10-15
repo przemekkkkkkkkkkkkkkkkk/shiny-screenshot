@@ -1,0 +1,22 @@
+{
+  "mode": "built-in image_gen",
+  "size": "Generated 1586\u00d7992, resampled with Lanczos to 2880\u00d71800",
+  "wallpapers": [
+    {
+      "name": "Silk",
+      "prompt": "Use case: stylized-concept\nAsset type: full-bleed abstract screenshot backdrop wallpaper\nPrimary request: Sculptural flowing satin-like 3D waves, broad folded ribbons of periwinkle, ultramarine and pale lavender, a soft ice-blue crest sweeping diagonally across the lower third, deep indigo upper field. Volumetric soft studio light, silky matte material, serene premium macOS desktop wallpaper, restrained detail.\nComposition: landscape 16:10, 2880 by 1800 pixels or larger, balanced edge-to-edge composition, no frames or borders, visual interest at edges while central area stays calm for a screenshot overlay.\nConstraints: exceptionally polished smooth color transitions, no banding, no text, no logos, no people, no watermark. Deliver one finished wallpaper only."
+    },
+    {
+      "name": "Prism",
+      "prompt": "Use case: stylized-concept\nAsset type: full-bleed abstract screenshot backdrop wallpaper\nPrimary request: Translucent frosted-glass liquid blobs and curved lenses, close-up abstract composition, seafoam mint, icy cyan and pale lavender with subtle soft violet refraction, light luminous background, elegant overlapping rounded forms with beautiful caustics and generous calm areas, premium macOS wallpaper.\nComposition: landscape 16:10, 2880 by 1800 pixels or larger, balanced edge-to-edge composition, no frames or borders, visual interest at edges while central area stays calm for a screenshot overlay.\nConstraints: exceptionally polished smooth color transitions, no banding, no text, no logos, no people, no watermark. Deliver one finished wallpaper only."
+    },
+    {
+      "name": "Solstice",
+      "prompt": "Use case: stylized-concept\nAsset type: full-bleed abstract screenshot backdrop wallpaper\nPrimary request: Abstract sculptural dunes at dusk, broad smooth flowing terracotta and peach sand ridges filling lower two thirds, violet shadows, softly glowing apricot horizon transitioning to deep mauve and purple upper field. Minimal surreal 3D landscape, clean matte surfaces with extremely subtle texture, premium macOS wallpaper.\nComposition: landscape 16:10, 2880 by 1800 pixels or larger, balanced edge-to-edge composition, no frames or borders, visual interest at edges while central area stays calm for a screenshot overlay.\nConstraints: exceptionally polished smooth color transitions, no banding, no text, no logos, no people, no watermark. Deliver one finished wallpaper only."
+    },
+    {
+      "name": "Boreal",
+      "prompt": "Use case: stylized-concept\nAsset type: full-bleed abstract screenshot backdrop wallpaper\nPrimary request: Abstract luminous aurora ribbons, silky flowing teal and mint-green light sweeping across deep midnight indigo and violet, softly illuminated ribbon folds with elegant curved depth, no stars, no literal landscape, smooth gradients and rich dark negative space. Premium macOS desktop wallpaper.\nComposition: landscape 16:10, 2880 by 1800 pixels or larger, balanced edge-to-edge composition, no frames or borders, visual interest at edges while central area stays calm for a screenshot overlay.\nConstraints: exceptionally polished smooth color transitions, no banding, no text, no logos, no people, no watermark. Deliver one finished wallpaper only."
+    }
+  ]
+}
