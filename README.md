@@ -49,6 +49,16 @@
 
 Download the DMG from the [latest release](https://github.com/przemekkkkkkkkkkkkkkkkk/shiny-screenshot/releases/latest) and drag Shiny Screenshot to Applications. It's signed and notarized, and updates itself through Sparkle.
 
+## Build from source
+
+Needs macOS 15+, Xcode and [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
+
+```sh
+xcodegen
+open ShinyScreenshot.xcodeproj   # then Run, or:
+xcodebuild -scheme ShinyScreenshot -derivedDataPath build build && open build/Build/Products/Debug/ShinyScreenshot.app
+```
+
 The first capture asks for Screen Recording permission (System Settings › Privacy & Security › Screen & System Audio Recording). Reopen the app after granting it.
 
 ## Use
@@ -67,3 +77,14 @@ With no tool selected, drag inside the selection to move it, or drag its handles
 
 Settings (menu bar icon › Settings…) holds the shortcut, save folder, open at login and update options.
 
+## Release
+
+`scripts/release.sh` builds, notarizes and staples the app and DMG, then writes the Sparkle `appcast.xml`. Bump the version in `project.yml` first. Publishing the DMG and `appcast.xml` as a GitHub release of `przemekkkkkkkkkkkkkkkkk/shiny-screenshot` is what installed copies check for updates.
+
+## Tests
+
+```sh
+xcodebuild -scheme ShinyScreenshot -derivedDataPath build test
+```
+
+`prototype/` holds the throwaway HTML design prototypes. `assets/tools/` regenerates the icon, banner and screenshots; `render-previews.swift` renders the screenshots from the real SwiftUI views into `assets/previews/`, so they match the app.
