@@ -150,6 +150,8 @@ final class Shiny {
             if overlay?.firstResponder is NSText { return e }
             s.commitText()
         }
+        // Typing in the background panel's title and description; Esc and Return still close and copy.
+        if overlay?.firstResponder is NSText, e.keyCode != UInt16(kVK_Escape), e.keyCode != UInt16(kVK_Return) { return e }
         let cmd = e.modifierFlags.contains(.command)
         switch (e.keyCode, cmd, Self.letter(e)) {
         case (UInt16(kVK_Escape), _, _):

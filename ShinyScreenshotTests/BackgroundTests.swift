@@ -154,3 +154,67 @@ struct BackgroundTests {
         #expect(offScreen.isEmpty, "\(offScreen.map(\.what))")
     }
 }
+
+/// Title and description: they grow the canvas, sit above (or below for captions) without overlapping the shot.
+struct HeadingTests {
+    @Test func textMakesRoomAndNeverOverlapsTheShot() throws {
+        let s = Fixture.screen(1440, 900)
+        s.selection = CGRect(x: 100, y: 100, width: 600, height: 400)
+        s.phase = .editing
+        s.style.enabled = true
+        let bare = s.canvas
+        #expect(s.heading == nil)
+        s.style.title = "Ship faster"
+        s.style.subtitle = "Everything you need to share a screenshot, in one place."
+        for preset in Heading.allCases {
+            s.style.apply(preset)
+            let h = try #require(s.heading), shot = s.shotOrigin, text = s.textOrigin
+            #expect(s.canvas.height > bare.height, "\(preset)")
+            if s.style.below {
+                #expect(text.y >= shot.y + 400, "\(preset)")
+            } else {
+                #expect(text.y + h.height <= shot.y, "\(preset)")
+            }
+            #expect(text.x >= 0 && text.x + h.width <= s.canvas.width, "\(preset)")
+            #expect(text.y >= 0 && shot.y + 400 <= s.canvas.height, "\(preset)")
+        }
+        s.style.apply(.poster)
+        #expect(s.heading?.lines.map(\.text) == ["SHIP FASTER", s.style.subtitle])
+        s.style.eyebrow = "new"
+        let withEyebrow = try #require(s.heading)
+        #expect(withEyebrow.lines.first?.text == "NEW")
+        s.style.textScale = 1.8
+        #expect(try #require(s.heading).height > withEyebrow.height)
+        // Every font, alignment and side keeps the text inside the canvas and off the shot.
+        for font in TextFont.allCases {
+            for align in TextAlign.allCases {
+                for below in [false, true] {
+                    s.style.font = font; s.style.align = align; s.style.below = below
+                    let h = try #require(s.heading), shot = s.shotOrigin, text = s.textOrigin
+                    #expect(below ? text.y >= shot.y + 400 : text.y + h.height <= shot.y, "\(font) \(align) \(below)")
+                    #expect(text.x >= 0 && text.x + h.width <= s.canvas.width)
+                }
+            }
+        }
+        s.style.title = "  "
+        s.style.eyebrow = "only a label"
+        s.style.subtitle = ""
+        #expect(s.heading == nil && s.canvas == bare)
+        _ = try #require(s.render())
+    }
+
+    /// The named families ship with macOS: each one resolves to itself, at every weight, not to the system font.
+    @Test func everyFontAndWeightResolves() {
+        for font in TextFont.allCases {
+            for weight in TextWeight.allCases {
+                let f = font.font(size: 40, weight: weight.value)
+                #expect(f.pointSize == 40)
+                if font.rawValue.contains(" ") || ![.sans, .rounded, .serif, .mono].contains(font) {
+                    #expect(f.familyName == font.rawValue, "\(font) \(weight): \(f.familyName ?? "nil")")
+                }
+            }
+        }
+        let light = TextFont.avenir.font(size: 40, weight: .light), black = TextFont.avenir.font(size: 40, weight: .black)
+        #expect(light.fontName != black.fontName, "weights pick different faces")
+    }
+}
