@@ -217,17 +217,41 @@ final class Session {
         if annotations.popLast()?.id == editingText { editingText = nil }
     }
 
+    /// Title and description, when the background is on and there is text to show.
+    var heading: HeadingLayout? {
+        style.enabled ? HeadingLayout(style, width: max(selection.width, 320)) : nil
+    }
+
+    /// The shot plus its title and description, before padding.
+    private var content: CGSize {
+        guard let h = heading else { return selection.size }
+        return CGSize(width: max(selection.width, h.width), height: selection.height + h.gap + h.height)
+    }
+
     /// Size of the exported image, in whole device pixels.
     var canvas: CGSize {
-        let c = style.enabled ? canvasSize(shot: selection.size, padding: style.padding, ratio: style.ratio.value) : selection.size
+        let c = style.enabled ? canvasSize(shot: content, padding: style.padding, ratio: style.ratio.value) : selection.size
         return CGSize(width: (c.width * scale).rounded() / scale, height: (c.height * scale).rounded() / scale)
     }
 
-    /// Where the shot sits inside the canvas: centred, on the pixel grid.
+    /// Where the shot sits inside the canvas: centred with its text, on the pixel grid.
     var shotOrigin: CGPoint {
-        let c = canvas
-        return CGPoint(x: ((c.width - selection.width) / 2 * scale).rounded() / scale,
-                       y: ((c.height - selection.height) / 2 * scale).rounded() / scale)
+        let top = contentOrigin.y + (heading.map { $0.style.below ? 0 : $0.height + $0.gap } ?? 0)
+        return snapped(CGPoint(x: (canvas.width - selection.width) / 2, y: top))
+    }
+
+    var textOrigin: CGPoint {
+        guard let h = heading else { return .zero }
+        let x = (canvas.width - h.width) / 2
+        return snapped(CGPoint(x: x, y: h.style.below ? contentOrigin.y + selection.height + h.gap : contentOrigin.y))
+    }
+
+    private var contentOrigin: CGPoint {
+        CGPoint(x: (canvas.width - content.width) / 2, y: (canvas.height - content.height) / 2)
+    }
+
+    private func snapped(_ p: CGPoint) -> CGPoint {
+        CGPoint(x: (p.x * scale).rounded() / scale, y: (p.y * scale).rounded() / scale)
     }
 
     func render() -> CGImage? {

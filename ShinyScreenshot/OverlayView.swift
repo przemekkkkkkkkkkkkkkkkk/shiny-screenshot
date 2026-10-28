@@ -206,6 +206,20 @@ private struct BackgroundPanel: View {
     @Bindable var s: Session
 
     var body: some View {
+        // Scrolls only on screens too short to show it all.
+        ViewThatFits(in: .vertical) {
+            content
+            ScrollView { content }.scrollIndicators(.never)
+        }
+        .frame(width: 270)
+        .frame(maxHeight: s.size.height - 40)
+        .fixedSize(horizontal: false, vertical: true)
+        .background(Color(white: 0.11).opacity(0.94), in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.white.opacity(0.12)))
+        .environment(\.colorScheme, .dark)
+    }
+
+    private var content: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Background").font(.system(size: 13, weight: .semibold))
@@ -237,30 +251,119 @@ private struct BackgroundPanel: View {
             LabeledSlider(label: "Roundness", value: $s.style.radius, range: 0...32, text: "\(Int(s.style.radius))")
             LabeledSlider(label: "Shadow", value: $s.style.shadow, range: 0...0.8, text: "\(Int(s.style.shadow * 125))%")
             Divider()
-            VStack(alignment: .leading, spacing: 6) {
-              Text("Size").font(.system(size: 12)).foregroundStyle(.secondary)
-              HStack(spacing: 4) {
-                ForEach(Ratio.allCases) { r in
-                    let on = s.style.ratio == r
-                    Button { s.style.ratio = r } label: {
-                        Text(r.rawValue)
-                            .font(.system(size: 11.5, weight: .medium))
-                            .foregroundStyle(on ? .black : .primary)
-                            .frame(maxWidth: .infinity, minHeight: 26)
-                            .background(on ? Color.mark : .white.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help(r.hint)
+            PanelSection(title: "Size") {
+                Chips(options: Ratio.allCases, selection: $s.style.ratio, label: \.rawValue, hint: \.hint)
+            }
+            Divider()
+            PanelSection(title: "Text") {
+                VStack(spacing: 4) {
+                    PanelField(prompt: "Label, like NEW or STEP 1", text: $s.style.eyebrow)
+                    PanelField(prompt: "Title", text: $s.style.title)
+                    PanelField(prompt: "Description", text: $s.style.subtitle)
                 }
-              }
+                Chips(options: Heading.allCases, selection: Binding { s.style.heading } set: { s.style.apply($0) },
+                      label: \.rawValue, hint: \.hint)
+                // Fine-tuning appears once there is text to tune.
+                if s.heading != nil {
+                    Chips(options: Array(TextFont.allCases.prefix(4)), selection: $s.style.font, label: \.name, hint: \.hint)
+                    Chips(options: Array(TextFont.allCases.suffix(4)), selection: $s.style.font, label: \.name, hint: \.hint)
+                    Chips(options: TextWeight.allCases, selection: $s.style.weight, label: \.rawValue, hint: \.hint)
+                    HStack(spacing: 8) {
+                        Chips(options: [false, true], selection: $s.style.below,
+                              label: { $0 ? "Below" : "Above" }, hint: { $0 ? "Text under the shot" : "Text over the shot" })
+                        Chips(options: TextAlign.allCases, selection: $s.style.align, label: \.rawValue, hint: \.hint)
+                    }
+                    ColorRow(selection: $s.style.textColor)
+                    LabeledSlider(label: "Text size", value: $s.style.textScale, range: 0.6...1.8,
+                                  text: "\(Int((s.style.textScale * 100).rounded()))%")
+                    Toggle("Text shadow", isOn: $s.style.textShadow)
+                        .toggleStyle(.switch).controlSize(.mini).tint(Color.mark)
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                }
             }
         }
         .padding(14)
-        .frame(width: 270)
-        .background(Color(white: 0.11).opacity(0.94), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.white.opacity(0.12)))
-        .environment(\.colorScheme, .dark)
+    }
+}
+
+private struct PanelSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.system(size: 12)).foregroundStyle(.secondary)
+            content
+        }
+    }
+}
+
+private struct Chips<Option: Hashable>: View {
+    let options: [Option]
+    @Binding var selection: Option
+    let label: (Option) -> String
+    let hint: (Option) -> String
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(options, id: \.self) { o in
+                let on = selection == o
+                Button { selection = o } label: {
+                    Text(label(o))
+                        .font(.system(size: 11.5, weight: .medium))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .foregroundStyle(on ? .black : .primary)
+                        .frame(maxWidth: .infinity, minHeight: 26)
+                        .background(on ? Color.mark : .white.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(hint(o))
+            }
+        }
+    }
+}
+
+private struct ColorRow: View {
+    @Binding var selection: Int?
+
+    var body: some View {
+        HStack(spacing: 4) {
+            swatch(nil) {
+                Image(systemName: "circle.lefthalf.filled").font(.system(size: 17)).foregroundStyle(.white)
+            }
+            .help("Auto: dark or white to suit the background")
+            ForEach(textColors, id: \.self) { hex in
+                swatch(hex) { Circle().fill(Color(hex: hex)).overlay(Circle().strokeBorder(.white.opacity(0.25))) }
+            }
+        }
+    }
+
+    private func swatch(_ hex: Int?, @ViewBuilder _ fill: () -> some View) -> some View {
+        Button { selection = hex } label: {
+            fill()
+                .frame(width: 18, height: 18)
+                .padding(2)
+                .overlay(Circle().strokeBorder(selection == hex ? Color.mark : .clear, lineWidth: 2))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct PanelField: View {
+    let prompt: String
+    @Binding var text: String
+
+    var body: some View {
+        TextField(prompt, text: $text, axis: .vertical)
+            .textFieldStyle(.plain)
+            .lineLimit(1...3)
+            .font(.system(size: 12.5))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
     }
 }
 
