@@ -372,15 +372,43 @@ private func draw(_ a: Annotation, in ctx: GraphicsContext, pixelated: Image, fu
         }
         ctx.draw(Text("\(a.number)").font(.system(size: 13, weight: .bold)).foregroundStyle(.white), at: p[0])
     case .text:
-        let text = ctx.resolve(Text(a.text).font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(a.color == .mark ? .black : .white))
-        let t = text.measure(in: CGSize(width: 4000, height: 400))
-        let r = CGRect(x: p[0].x, y: p[0].y - t.height / 2 - 5, width: t.width + 18, height: t.height + 10)
+        let r = a.labelFrame
+        let text = Text(a.text).font(Font(a.font as CTFont)).foregroundStyle(a.textColor)
+        let origin = CGPoint(x: r.minX + a.inset.width, y: r.minY + a.inset.height)
         ctx.drawLayer { l in
-            l.addFilter(lift)
-            l.fill(Path(roundedRect: r, cornerRadius: 7), with: .color(a.color))
+            if a.filled {
+                l.addFilter(lift)
+                l.fill(Path(roundedRect: r, cornerRadius: a.cornerRadius), with: .color(a.color))
+            } else {
+                // Two dark halos keep coloured text readable on any background.
+                l.addFilter(a.halo)
+                l.addFilter(a.halo)
+            }
+            l.draw(text, at: origin, anchor: .topLeading)
         }
-        ctx.draw(text, at: CGPoint(x: r.midX, y: r.midY))
+    }
+}
+
+/// Text label sizes, stepped through by the smaller and larger buttons.
+let labelSizes: [CGFloat] = [12, 15, 20, 28, 40]
+
+extension Annotation {
+    var font: NSFont { .systemFont(ofSize: size, weight: filled ? .semibold : .bold) }
+    /// Between a label's text and its edge.
+    var inset: CGSize { CGSize(width: size * 0.6, height: size / 3) }
+    var cornerRadius: CGFloat { size * 0.47 }
+    var textColor: Color { filled ? (color == .mark ? .black : .white) : color }
+    var halo: GraphicsContext.Filter { .shadow(color: .black.opacity(0.75), radius: max(1.5, size / 10)) }
+
+    /// A text label's box: starts at the click with its first line centred on it, and grows down for more lines.
+    var labelFrame: CGRect {
+        func measure(_ s: String) -> CGSize {
+            NSAttributedString(string: s, attributes: [.font: font])
+                .boundingRect(with: CGSize(width: 10_000, height: 10_000), options: [.usesLineFragmentOrigin, .usesFontLeading]).size
+        }
+        let t = measure(text.isEmpty ? " " : text), line = measure(" ").height
+        return CGRect(x: points[0].x, y: points[0].y - line / 2 - inset.height,
+                      width: ceil(t.width) + 2 * inset.width, height: ceil(t.height) + 2 * inset.height)
     }
 }
 
