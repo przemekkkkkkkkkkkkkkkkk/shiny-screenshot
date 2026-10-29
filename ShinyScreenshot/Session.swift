@@ -56,6 +56,9 @@ struct Annotation: Identifiable {
     var points: [CGPoint]
     var text = ""
     var number = 0
+    /// Text labels only: point size, and a solid tag or outlined text.
+    var size: CGFloat = 15
+    var filled = true
 
     var box: CGRect { rect(from: points[0], to: points[points.count - 1]) }
 }
@@ -84,7 +87,10 @@ final class Session {
     private var storedSelection = CGRect.zero
     var annotations: [Annotation] = []
     var tool: Tool?
-    var color = palette[0]
+    /// Colour, label size and look apply to the next annotation and to the label being typed.
+    var color = palette[0] { didSet { editLabel { $0.color = color } } }
+    var labelSize: CGFloat = 15 { didSet { editLabel { $0.size = labelSize } } }
+    var labelFilled = true { didSet { editLabel { $0.filled = labelFilled } } }
     var style = Style()
     var editingText: UUID?
     var draft = ""
@@ -97,7 +103,9 @@ final class Session {
     var scrolling = false
 
     /// `create` remembers what to restore if the new selection ends up too small.
-    private enum Drag { case create(previous: CGRect, phase: Phase), move(CGRect), resize(Handle, CGRect), draw(UUID) }
+    private enum Drag {
+        case create(previous: CGRect, phase: Phase), move(CGRect), resize(Handle, CGRect), draw(UUID), moveLabel(UUID, CGPoint)
+    }
     @ObservationIgnored private var drag: Drag?
     @ObservationIgnored private var dragStart: CGPoint?
     /// Furthest the pointer got from where the drag started; under 3 pt it counts as a click.
@@ -152,6 +160,9 @@ final class Session {
         case .draw(let id):
             guard let i = annotations.firstIndex(where: { $0.id == id }) else { break }
             if annotations[i].tool == .pen { annotations[i].points.append(b) } else { annotations[i].points = [a, b] }
+        case .moveLabel(let id, let origin):
+            guard let i = annotations.firstIndex(where: { $0.id == id }) else { break }
+            annotations[i].points = [CGPoint(x: origin.x + d.width, y: origin.y + d.height)]
         case nil:
             break
         }
@@ -173,6 +184,9 @@ final class Session {
                 selection = previous
                 phase = previousPhase
             }
+        case .moveLabel(let id, let origin) where wasClick:
+            // A click edits the label; undo the jitter of the press.
+            if let i = annotations.firstIndex(where: { $0.id == id }) { annotations[i].points = [origin] }
         default:
             break
         }
@@ -192,6 +206,7 @@ final class Session {
             return .resize(h, selection)
         }
         guard selection.contains(p) else { return .create(previous: selection, phase: phase) }
+        if let l = label(at: p) { return .moveLabel(l.id, l.points[0]) }
         guard let tool else { return .move(selection) }
         if tool.placesOnClick { return nil }
         let a = Annotation(tool: tool, color: color, points: [p, p])
@@ -208,8 +223,10 @@ final class Session {
             }
             return
         }
-        guard !style.enabled, selection.contains(p), let tool, tool.placesOnClick else { return }
-        var a = Annotation(tool: tool, color: color, points: [p])
+        guard !style.enabled, selection.contains(p) else { return }
+        if let l = label(at: p) { return edit(l) }
+        guard let tool, tool.placesOnClick else { return }
+        var a = Annotation(tool: tool, color: color, points: [p], size: labelSize, filled: labelFilled)
         if tool == .step {
             a.number = annotations.filter { $0.tool == .step }.count + 1
         } else {
@@ -223,6 +240,25 @@ final class Session {
         guard w.id != kCGNullWindowID, !scrolling else { return }
         let (selection, scale) = (selection, scale)
         Task { if let shot = try? await Capture.window(w, for: selection, scale: scale) { windowShot = shot } }
+    }
+
+    /// The topmost text label under `p`, when no tool or the text tool is picked; other tools draw over labels.
+    private func label(at p: CGPoint) -> Annotation? {
+        guard tool == nil || tool == .text else { return nil }
+        return annotations.last { $0.tool == .text && $0.labelFrame.contains(p) }
+    }
+
+    private func edit(_ a: Annotation) {
+        color = a.color
+        labelSize = a.size
+        labelFilled = a.filled
+        draft = a.text
+        editingText = a.id
+    }
+
+    private func editLabel(_ change: (inout Annotation) -> Void) {
+        guard let id = editingText, let i = annotations.firstIndex(where: { $0.id == id }) else { return }
+        change(&annotations[i])
     }
 
     func commitText() {
