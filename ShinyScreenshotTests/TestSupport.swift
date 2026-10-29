@@ -51,18 +51,19 @@ enum Fixture {
         return ctx.makeImage()!
     }
 
-    /// A session over `image`, built the way Capture.freeze builds one (pixelated copy included).
+    /// A session over `image`, built the way Capture.freeze builds one.
     static func session(_ image: CGImage, scale: CGFloat, windows: [CGRect] = []) -> Session {
         let size = CGSize(width: CGFloat(image.width) / scale, height: CGFloat(image.height) / scale)
-        let frozen = Capture.Frozen(image: image, pixelated: Capture.pixelate(image, scale: scale) ?? image,
-                                    scale: scale, size: size, windows: windows)
+        let frozen = Capture.Frozen(image: image,
+                                    scale: scale, size: size, windows: windows.map { .init(id: kCGNullWindowID, frame: $0) })
         return Session(frozen, displayID: 0)
     }
 
     /// For state-machine tests that never look at pixels: a screen of any point size backed by a 1-pixel image.
     static func screen(_ w: CGFloat, _ h: CGFloat, scale: CGFloat = 1, windows: [CGRect] = []) -> Session {
         let image = solid(1, 1, CGColor(gray: 0.5, alpha: 1))
-        return Session(Capture.Frozen(image: image, pixelated: image, scale: scale, size: CGSize(width: w, height: h), windows: windows),
+        return Session(Capture.Frozen(image: image, scale: scale, size: CGSize(width: w, height: h),
+                                     windows: windows.map { .init(id: kCGNullWindowID, frame: $0) }),
                        displayID: 0)
     }
 }

@@ -32,7 +32,7 @@ struct OverlayView: View {
                     .onEnded { s.dragEnded(from: $0.startLocation, to: $0.location) })
                 .onContinuousHover { phase in
                     if case .active(let p) = phase, s.phase == .selecting { s.cursor = p }
-                    NSCursor.crosshair.set()
+                    (s.tool == .text ? NSCursor.iBeam : .crosshair).set()
                 }
             if let w = s.hoveredWindow {
                 RoundedRectangle(cornerRadius: 10)
@@ -53,19 +53,32 @@ struct OverlayView: View {
                 SelectionChrome(r: s.selection, scale: s.scale)
             }
             if let id = s.editingText, let a = s.annotations.first(where: { $0.id == id }) {
-                TextDraft(s: s, color: a.color)
-                    .offset(x: a.points[0].x, y: a.points[0].y - 15)
+                let r = a.labelFrame
+                // A new identity per label, so each one takes the keyboard when it opens.
+                TextDraft(s: s, a: a).id(id)
+                    .offset(x: r.minX, y: r.minY)
+                LabelBar(s: s)
+                    .offset(x: r.minX, y: r.minY > 56 ? r.minY - 44 : r.maxY + 8)
             }
             if s.phase == .editing {
-                Toolbar(s: s, act: act)
-                    .position(s.toolbarCenter(around: preview ?? s.selection))
+                Group {
+                    if s.scrolling { ScrollStart(act: act) } else { Toolbar(s: s, act: act) }
+                }
+                .position(s.toolbarCenter(around: preview ?? s.selection))
+                if preview == nil, s.tool == .text || s.editingText != nil {
+                    Pill(text: s.editingText == nil ? "Click to add text. Click a label to edit it, drag to move it."
+                                                    : "Return to finish, ⌥Return for a new line.")
+                        .position(x: s.size.width / 2, y: 64)
+                }
             }
             if preview != nil {
                 BackgroundPanel(s: s)
                     .position(x: s.size.width - 150, y: s.size.height / 2)
             }
             if s.phase == .selecting {
-                Pill(text: "Drag to select an area, or click a window. Esc cancels.")
+                Pill(text: s.windowsOnly ? "Click a window. Esc cancels."
+                     : s.scrolling ? "Drag over the part that scrolls. Esc cancels."
+                     : "Drag to select an area, or click a window. Esc cancels.")
                     .position(x: s.size.width / 2, y: 64)
                 if let c = s.cursor { Loupe(s: s, p: c) }
             }
@@ -117,25 +130,62 @@ private struct SelectionChrome: View {
     }
 }
 
+/// The label being typed, styled like the finished one so nothing jumps on Return.
 private struct TextDraft: View {
     @Bindable var s: Session
-    let color: Color
+    let a: Annotation
     @FocusState private var focused: Bool
 
     var body: some View {
-        TextField("Type a note", text: $s.draft)
+        let shape = RoundedRectangle(cornerRadius: a.cornerRadius)
+        TextField("Type a note", text: $s.draft, axis: .vertical)
             .textFieldStyle(.plain)
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(color == .mark ? .black : .white)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
-            .frame(minWidth: 140)
+            .font(Font(a.font as CTFont))
+            .foregroundStyle(a.textColor)
+            .shadow(color: .black.opacity(a.filled ? 0 : 0.75), radius: max(1.5, a.size / 10))
+            .padding(.horizontal, a.inset.width)
+            .padding(.vertical, a.inset.height)
+            .frame(minWidth: a.size * 8, alignment: .leading)
             .fixedSize()
-            .background(color, in: RoundedRectangle(cornerRadius: 7))
+            .background(a.filled ? a.color : .clear, in: shape)
+            // Plain text has no tag, so outline where the field is.
+            .overlay(shape.strokeBorder(.white.opacity(a.filled ? 0 : 0.7), style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
             .focused($focused)
             .task { focused = true }
+            // Picking a colour, size or look keeps typing in the label.
+            .onChange(of: a.size) { focused = true }
+            .onChange(of: a.filled) { focused = true }
+            .onChange(of: a.color) { focused = true }
             .onSubmit { s.commitText() }
             .onExitCommand { s.commitText() }
+    }
+}
+
+/// Look and size of the label being typed, floating just above it.
+private struct LabelBar: View {
+    @Bindable var s: Session
+
+    var body: some View {
+        let i = labelSizes.firstIndex(of: s.labelSize) ?? 1
+        HStack(spacing: 2) {
+            BarButton(symbol: "capsule.fill", on: s.labelFilled, help: "Text on a solid tag") { s.labelFilled = true }
+            BarButton(symbol: "textformat", on: !s.labelFilled, help: "Plain text with an outline") { s.labelFilled = false }
+            Divider().frame(height: 20).padding(.horizontal, 4)
+            BarButton(symbol: "textformat.size.smaller", help: "Smaller") { s.labelSize = labelSizes[max(i - 1, 0)] }
+                .disabled(i == 0)
+            BarButton(symbol: "textformat.size.larger", help: "Larger") { s.labelSize = labelSizes[min(i + 1, labelSizes.count - 1)] }
+                .disabled(i == labelSizes.count - 1)
+            Divider().frame(height: 20).padding(.horizontal, 4)
+            BarButton(symbol: "trash", help: "Delete label") {
+                s.draft = ""
+                s.commitText()
+            }
+        }
+        .padding(4)
+        .background(Color(white: 0.11).opacity(0.94), in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.12)))
+        .environment(\.colorScheme, .dark)
+        .fixedSize()
     }
 }
 
@@ -178,6 +228,23 @@ private struct Toolbar: View {
     }
 }
 
+/// Scrolling capture's toolbar: once the area is picked, start recording it.
+private struct ScrollStart: View {
+    let act: (OverlayAction) -> Void
+
+    var body: some View {
+        HStack(spacing: 2) {
+            BarButton(symbol: "xmark", help: "Cancel (Esc)") { act(.cancel) }
+            BarButton(symbol: "arrow.down.to.line", title: "Start, then scroll", on: true, help: "Start recording (Return)") { act(.scroll) }
+        }
+        .padding(5)
+        .background(Color(white: 0.11).opacity(0.94), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.white.opacity(0.12)))
+        .environment(\.colorScheme, .dark)
+        .fixedSize()
+    }
+}
+
 private struct BarButton: View {
     let symbol: String
     var title: String?
@@ -206,6 +273,20 @@ private struct BackgroundPanel: View {
     @Bindable var s: Session
 
     var body: some View {
+        // Scrolls only on screens too short to show it all.
+        ViewThatFits(in: .vertical) {
+            content
+            ScrollView { content }.scrollIndicators(.never)
+        }
+        .frame(width: 270)
+        .frame(maxHeight: s.size.height - 40)
+        .fixedSize(horizontal: false, vertical: true)
+        .background(Color(white: 0.11).opacity(0.94), in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.white.opacity(0.12)))
+        .environment(\.colorScheme, .dark)
+    }
+
+    private var content: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Background").font(.system(size: 13, weight: .semibold))
@@ -237,30 +318,119 @@ private struct BackgroundPanel: View {
             LabeledSlider(label: "Roundness", value: $s.style.radius, range: 0...32, text: "\(Int(s.style.radius))")
             LabeledSlider(label: "Shadow", value: $s.style.shadow, range: 0...0.8, text: "\(Int(s.style.shadow * 125))%")
             Divider()
-            VStack(alignment: .leading, spacing: 6) {
-              Text("Size").font(.system(size: 12)).foregroundStyle(.secondary)
-              HStack(spacing: 4) {
-                ForEach(Ratio.allCases) { r in
-                    let on = s.style.ratio == r
-                    Button { s.style.ratio = r } label: {
-                        Text(r.rawValue)
-                            .font(.system(size: 11.5, weight: .medium))
-                            .foregroundStyle(on ? .black : .primary)
-                            .frame(maxWidth: .infinity, minHeight: 26)
-                            .background(on ? Color.mark : .white.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help(r.hint)
+            PanelSection(title: "Size") {
+                Chips(options: Ratio.allCases, selection: $s.style.ratio, label: \.rawValue, hint: \.hint)
+            }
+            Divider()
+            PanelSection(title: "Text") {
+                VStack(spacing: 4) {
+                    PanelField(prompt: "Label, like NEW or STEP 1", text: $s.style.eyebrow)
+                    PanelField(prompt: "Title", text: $s.style.title)
+                    PanelField(prompt: "Description", text: $s.style.subtitle)
                 }
-              }
+                Chips(options: Heading.allCases, selection: Binding { s.style.heading } set: { s.style.apply($0) },
+                      label: \.rawValue, hint: \.hint)
+                // Fine-tuning appears once there is text to tune.
+                if s.heading != nil {
+                    Chips(options: Array(TextFont.allCases.prefix(4)), selection: $s.style.font, label: \.name, hint: \.hint)
+                    Chips(options: Array(TextFont.allCases.suffix(4)), selection: $s.style.font, label: \.name, hint: \.hint)
+                    Chips(options: TextWeight.allCases, selection: $s.style.weight, label: \.rawValue, hint: \.hint)
+                    HStack(spacing: 8) {
+                        Chips(options: [false, true], selection: $s.style.below,
+                              label: { $0 ? "Below" : "Above" }, hint: { $0 ? "Text under the shot" : "Text over the shot" })
+                        Chips(options: TextAlign.allCases, selection: $s.style.align, label: \.rawValue, hint: \.hint)
+                    }
+                    ColorRow(selection: $s.style.textColor)
+                    LabeledSlider(label: "Text size", value: $s.style.textScale, range: 0.6...1.8,
+                                  text: "\(Int((s.style.textScale * 100).rounded()))%")
+                    Toggle("Text shadow", isOn: $s.style.textShadow)
+                        .toggleStyle(.switch).controlSize(.mini).tint(Color.mark)
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                }
             }
         }
         .padding(14)
-        .frame(width: 270)
-        .background(Color(white: 0.11).opacity(0.94), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.white.opacity(0.12)))
-        .environment(\.colorScheme, .dark)
+    }
+}
+
+private struct PanelSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.system(size: 12)).foregroundStyle(.secondary)
+            content
+        }
+    }
+}
+
+private struct Chips<Option: Hashable>: View {
+    let options: [Option]
+    @Binding var selection: Option
+    let label: (Option) -> String
+    let hint: (Option) -> String
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(options, id: \.self) { o in
+                let on = selection == o
+                Button { selection = o } label: {
+                    Text(label(o))
+                        .font(.system(size: 11.5, weight: .medium))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .foregroundStyle(on ? .black : .primary)
+                        .frame(maxWidth: .infinity, minHeight: 26)
+                        .background(on ? Color.mark : .white.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(hint(o))
+            }
+        }
+    }
+}
+
+private struct ColorRow: View {
+    @Binding var selection: Int?
+
+    var body: some View {
+        HStack(spacing: 4) {
+            swatch(nil) {
+                Image(systemName: "circle.lefthalf.filled").font(.system(size: 17)).foregroundStyle(.white)
+            }
+            .help("Auto: dark or white to suit the background")
+            ForEach(textColors, id: \.self) { hex in
+                swatch(hex) { Circle().fill(Color(hex: hex)).overlay(Circle().strokeBorder(.white.opacity(0.25))) }
+            }
+        }
+    }
+
+    private func swatch(_ hex: Int?, @ViewBuilder _ fill: () -> some View) -> some View {
+        Button { selection = hex } label: {
+            fill()
+                .frame(width: 18, height: 18)
+                .padding(2)
+                .overlay(Circle().strokeBorder(selection == hex ? Color.mark : .clear, lineWidth: 2))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct PanelField: View {
+    let prompt: String
+    @Binding var text: String
+
+    var body: some View {
+        TextField(prompt, text: $text, axis: .vertical)
+            .textFieldStyle(.plain)
+            .lineLimit(1...3)
+            .font(.system(size: 12.5))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
     }
 }
 
