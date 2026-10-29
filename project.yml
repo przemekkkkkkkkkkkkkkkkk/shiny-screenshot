@@ -33,7 +33,7 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         # Sparkle: release.sh publishes appcast.xml with each GitHub release; the key signs every update.
-        SUFeedURL: https://github.com/pkalisiewicz/shiny-screenshot/releases/latest/download/appcast.xml
+        SUFeedURL: https://github.com/przemekkkkkkkkkkkkkkkkk/shiny-screenshot/releases/latest/download/appcast.xml
         SUPublicEDKey: 9SMZArnPP0PbQQ+nBlnTM20LplOTGLSgAr+9sRwrB7M=
         SUEnableAutomaticChecks: true
     settings:

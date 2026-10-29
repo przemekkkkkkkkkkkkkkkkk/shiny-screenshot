@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/pkalisiewicz/shiny-screenshot/releases/latest"><img src="https://img.shields.io/github/v/release/pkalisiewicz/shiny-screenshot?label=download" alt="Latest release"></a>
+  <a href="https://github.com/przemekkkkkkkkkkkkkkkkk/shiny-screenshot/releases/latest"><img src="https://img.shields.io/github/v/release/przemekkkkkkkkkkkkkkkkk/shiny-screenshot?label=download" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/macOS-15%2B-blue" alt="macOS 15+">
 </p>
 
@@ -47,7 +47,7 @@
 
 ## Install
 
-Download the DMG from the [latest release](https://github.com/pkalisiewicz/shiny-screenshot/releases/latest) and drag Shiny Screenshot to Applications. It's signed and notarized, and updates itself through Sparkle.
+Download the DMG from the [latest release](https://github.com/przemekkkkkkkkkkkkkkkkk/shiny-screenshot/releases/latest) and drag Shiny Screenshot to Applications. It's signed and notarized, and updates itself through Sparkle.
 
 ## Build from source
 
@@ -79,7 +79,7 @@ Settings (menu bar icon › Settings…) holds the shortcut, save folder, open a
 
 ## Release
 
-`scripts/release.sh` builds, notarizes and staples the app and DMG, then writes the Sparkle `appcast.xml`. Bump the version in `project.yml` first. Publishing the DMG and `appcast.xml` as a GitHub release of `pkalisiewicz/shiny-screenshot` is what installed copies check for updates.
+`scripts/release.sh` builds, notarizes and staples the app and DMG, then writes the Sparkle `appcast.xml`. Bump the version in `project.yml` first. Publishing the DMG and `appcast.xml` as a GitHub release of `przemekkkkkkkkkkkkkkkkk/shiny-screenshot` is what installed copies check for updates.
 
 ## Tests
 

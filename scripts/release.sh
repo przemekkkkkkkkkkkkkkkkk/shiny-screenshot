@@ -5,7 +5,7 @@
 # One-time setup (asks for an app-specific password from account.apple.com and keeps it in your keychain):
 #   xcrun notarytool store-credentials shiny-notary --apple-id <your Apple ID> --team-id Y9YVY93347
 # and dmgbuild, which lays out the disk image window:
-#   pipx install dmgbuild
+#   brew install pipx && pipx install dmgbuild
 # The Sparkle update key is in the keychain too (account shiny-screenshot; its public half is SUPublicEDKey in project.yml).
 # Back it up with: build/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys --account shiny-screenshot -x <file>
 #
@@ -76,8 +76,8 @@ rm -rf build/appcast
 mkdir -p build/appcast
 cp "$DMG" build/appcast/
 build/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_appcast --account shiny-screenshot \
-  --download-url-prefix "https://github.com/pkalisiewicz/shiny-screenshot/releases/download/v$VERSION/" \
+  --download-url-prefix "https://github.com/przemekkkkkkkkkkkkkkkkk/shiny-screenshot/releases/download/v$VERSION/" \
   -o "$OUT/appcast.xml" build/appcast
 rm -rf build/appcast
 echo "Ready: $OUT/ShinyScreenshot.zip, $DMG and $OUT/appcast.xml"
-echo "Publish: gh release create v$VERSION \"$DMG\" $OUT/appcast.xml -R pkalisiewicz/shiny-screenshot"
+echo "Publish: gh release create v$VERSION \"$DMG\" $OUT/appcast.xml -R przemekkkkkkkkkkkkkkkkk/shiny-screenshot"
