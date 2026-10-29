@@ -5,7 +5,7 @@
 # One-time setup (asks for an app-specific password from account.apple.com and keeps it in your keychain):
 #   xcrun notarytool store-credentials shiny-notary --apple-id <your Apple ID> --team-id <team ID>
 # and dmgbuild, which lays out the disk image window:
-#   pipx install dmgbuild
+#   brew install pipx && pipx install dmgbuild
 # The Sparkle update key is in the keychain too (account shiny-screenshot; its public half is SUPublicEDKey in project.yml).
 # Back it up with: build/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys --account shiny-screenshot -x <file>
 #
