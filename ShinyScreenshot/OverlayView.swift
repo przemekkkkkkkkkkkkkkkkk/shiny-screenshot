@@ -57,15 +57,19 @@ struct OverlayView: View {
                     .offset(x: a.points[0].x, y: a.points[0].y - 15)
             }
             if s.phase == .editing {
-                Toolbar(s: s, act: act)
-                    .position(s.toolbarCenter(around: preview ?? s.selection))
+                Group {
+                    if s.scrolling { ScrollStart(act: act) } else { Toolbar(s: s, act: act) }
+                }
+                .position(s.toolbarCenter(around: preview ?? s.selection))
             }
             if preview != nil {
                 BackgroundPanel(s: s)
                     .position(x: s.size.width - 150, y: s.size.height / 2)
             }
             if s.phase == .selecting {
-                Pill(text: "Drag to select an area, or click a window. Esc cancels.")
+                Pill(text: s.windowsOnly ? "Click a window. Esc cancels."
+                     : s.scrolling ? "Drag over the part that scrolls. Esc cancels."
+                     : "Drag to select an area, or click a window. Esc cancels.")
                     .position(x: s.size.width / 2, y: 64)
                 if let c = s.cursor { Loupe(s: s, p: c) }
             }
@@ -169,6 +173,23 @@ private struct Toolbar: View {
                 s.style.enabled.toggle()
             }
             BarButton(symbol: "doc.on.doc", title: "Copy", on: true, help: "Copy to clipboard (Return)") { act(.copy) }
+        }
+        .padding(5)
+        .background(Color(white: 0.11).opacity(0.94), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.white.opacity(0.12)))
+        .environment(\.colorScheme, .dark)
+        .fixedSize()
+    }
+}
+
+/// Scrolling capture's toolbar: once the area is picked, start recording it.
+private struct ScrollStart: View {
+    let act: (OverlayAction) -> Void
+
+    var body: some View {
+        HStack(spacing: 2) {
+            BarButton(symbol: "xmark", help: "Cancel (Esc)") { act(.cancel) }
+            BarButton(symbol: "arrow.down.to.line", title: "Start, then scroll", on: true, help: "Start recording (Return)") { act(.scroll) }
         }
         .padding(5)
         .background(Color(white: 0.11).opacity(0.94), in: RoundedRectangle(cornerRadius: 12))

@@ -12,16 +12,42 @@ struct ShinyScreenshotApp: App {
 }
 
 private struct MenuContent: View {
-    @AppStorage("shortcut") private var shortcut = Shortcut.standard
+    @AppStorage(HotkeyAction.area.defaultsKey) private var area = HotkeyAction.area.standard
+    @AppStorage(HotkeyAction.window.defaultsKey) private var window = HotkeyAction.window.standard
+    @AppStorage(HotkeyAction.again.defaultsKey) private var again = HotkeyAction.again.standard
+    private let shiny = Shiny.shared
 
     var body: some View {
         if let version = Updates.shared.available {
             Button("Update to \(version)…") { Updates.shared.check() }
             Divider()
         }
-        Button("Capture Area") { Shiny.shared.capture() }
-            .keyboardShortcut(shortcut.menuShortcut)
-        Button("Capture Full Screen") { Shiny.shared.capture(fullScreen: true) }
+        Button("Capture Area") { shiny.capture() }
+            .keyboardShortcut(area.menuShortcut)
+        Button("Capture Window") { shiny.capture(.window) }
+            .keyboardShortcut(window.menuShortcut)
+        Button("Capture Last Area Again") { shiny.capture(.again) }
+            .keyboardShortcut(again.menuShortcut)
+            .disabled(shiny.lastArea == nil)
+        Button("Capture Full Screen") { shiny.capture(.fullScreen) }
+        Button("Capture Scrolling Area") { shiny.capture(.scrolling) }
+        Menu("Capture After Delay") {
+            ForEach([3, 5, 10], id: \.self) { n in
+                Button("\(n) Seconds") { shiny.capture(after: n) }
+            }
+        }
+        Divider()
+        Menu("Recent") {
+            ForEach(shiny.recent.indices, id: \.self) { i in
+                let shot = shiny.recent[i]
+                Button { shiny.reopen(shot) } label: {
+                    Label { Text(shot.caption) } icon: { Image(nsImage: shot.thumbnail) }
+                }
+            }
+            Divider()
+            Button("Clear") { shiny.recent = [] }
+        }
+        .disabled(shiny.recent.isEmpty)
         Divider()
         Button("Settings…") { Shiny.shared.showSettings() }
             .keyboardShortcut(",")
@@ -36,7 +62,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         Shot.removeOldDragFiles()
         _ = Updates.shared
-        if !Shiny.shared.registerShortcut() {
+        Shiny.shared.registerShortcuts()
+        if !Shiny.shared.isRegistered(.area) {
             let key = Shortcut.saved.display
             let alert = NSAlert()
             alert.messageText = "\(key) is already taken"
@@ -53,33 +80,54 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-enum OverlayAction { case copy, save, pin, cancel }
+enum OverlayAction { case copy, save, pin, scroll, cancel }
+
+enum CaptureMode { case area, window, again, fullScreen, scrolling }
 
 /// Owns the capture overlay and the floating cards and pins it leaves behind.
+@Observable
 final class Shiny {
     static let shared = Shiny()
 
+    /// Newest first. Only the newest keeps its session (the whole frozen screen) for Edit; the rest keep just their image.
+    var recent: [Shot] = []
+    /// The last copied, saved or pinned selection and its background, for capturing the same area again.
+    private(set) var lastArea: (rect: CGRect, style: Style)?
+
     private var overlay: NSWindow?
+    private var session: Session?
     private var keyMonitor: Any?
     private var resignObserver: NSObjectProtocol?
     private var panels: [NSWindow] = []
     private var settings: NSWindow?
-    private var hotkey: Hotkey?
+    private var hotkeys: [HotkeyAction: Hotkey] = [:]
     /// From the hotkey until the overlay closes (or an alert is dismissed), so a second press can't start a second capture.
     private var busy = false
 
-    func capture(fullScreen: Bool = false) {
+    func capture(_ mode: CaptureMode = .area, after delay: Int = 0) {
         guard !busy else { return }
         guard CGPreflightScreenCaptureAccess() else { return askForPermission() }
-        let mouse = NSEvent.mouseLocation
-        guard let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? NSScreen.main,
-              let id = screen.displayID else { return }
+        guard let screen = Self.screenUnderMouse, let id = screen.displayID else { return }
+        if delay > 0 { return countdown(delay, on: screen) { [weak self] in self?.capture(mode) } }
         let scale = screen.backingScaleFactor
         busy = true
         Task {
             do {
                 let session = Session(try await Capture.freeze(displayID: id, scale: scale), displayID: id)
-                if fullScreen { session.selectAll() }
+                switch mode {
+                case .area: break
+                case .window: session.windowsOnly = true
+                case .scrolling: session.scrolling = true
+                case .fullScreen: session.selectAll()
+                case .again:
+                    // Clipped to this screen; if none of it is here, select as usual.
+                    if let last = lastArea, case let r = last.rect.intersection(session.bounds),
+                       r.width >= minSelectionSide, r.height >= minSelectionSide {
+                        session.selection = r
+                        session.style = last.style
+                        session.phase = .editing
+                    }
+                }
                 busy = false
                 open(session)
             } catch {
@@ -89,20 +137,55 @@ final class Shiny {
         }
     }
 
-    /// Registers the saved shortcut (⇧⌘2 by default: free on macOS, unlike ⇧⌘3/4/5). False when another app owns it.
-    @discardableResult
-    func registerShortcut() -> Bool {
-        hotkey?.unregister()
-        let s = Shortcut.saved
-        hotkey = Hotkey(keyCode: s.keyCode, modifiers: s.modifiers) { [weak self] in self?.capture() }
-        return shortcutRegistered
+    private static var screenUnderMouse: NSScreen? {
+        let mouse = NSEvent.mouseLocation
+        return NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? NSScreen.main
     }
 
-    func unregisterShortcut() {
-        hotkey?.unregister()
+    /// Registers every saved shortcut (⇧⌘2 for an area by default: free on macOS, unlike ⇧⌘3/4/5).
+    func registerShortcuts() {
+        for a in HotkeyAction.allCases {
+            hotkeys[a]?.unregister()
+            let s = Shortcut.saved(a)
+            let mode: CaptureMode = switch a {
+            case .area: .area
+            case .window: .window
+            case .again: .again
+            }
+            hotkeys[a] = Hotkey(keyCode: s.keyCode, modifiers: s.modifiers) { [weak self] in self?.capture(mode) }
+        }
     }
 
-    var shortcutRegistered: Bool { hotkey?.isRegistered ?? false }
+    func unregisterShortcuts() {
+        for h in hotkeys.values { h.unregister() }
+    }
+
+    /// False when another app owns the shortcut.
+    func isRegistered(_ a: HotkeyAction) -> Bool { hotkeys[a]?.isRegistered ?? false }
+
+    private func countdown(_ seconds: Int, on screen: NSScreen, then go: @escaping () -> Void) {
+        busy = true
+        weak var panel: NSPanel?
+        let p = makePanel(CountdownView(seconds: seconds) { [weak self] finished in
+            guard let self, let panel else { return }
+            self.close(panel)
+            self.busy = false
+            if finished { go() }
+        })
+        panel = p
+        p.setFrameOrigin(CGPoint(x: screen.visibleFrame.midX - p.frame.width / 2, y: screen.visibleFrame.maxY - p.frame.height))
+        p.orderFrontRegardless()
+    }
+
+    /// Shows a recent capture's card again: copy, save, pin or edit it from there.
+    func reopen(_ shot: Shot) {
+        showCard(shot, title: "Captured at \(shot.date.formatted(date: .omitted, time: .shortened))")
+    }
+
+    private func remember(_ shot: Shot) {
+        let older = recent.filter { $0.session == nil || $0.session !== shot.session }.prefix(4).map(\.withoutSession)
+        recent = [shot] + older
+    }
 
     func showSettings() {
         if settings?.isVisible != true {
@@ -124,6 +207,8 @@ final class Shiny {
         window.contentView = NSHostingView(rootView: OverlayView(s: s) { [weak self] in self?.handle($0, s) })
         window.makeKeyAndOrderFront(nil)
         overlay = window
+        session = s
+        s.preparePixelated()
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             self?.handleKey(event, s) ?? event
         }
@@ -140,6 +225,8 @@ final class Shiny {
         keyMonitor = nil
         overlay?.orderOut(nil)
         overlay = nil
+        session?.releasePixelated()
+        session = nil
         busy = false
     }
 
@@ -157,7 +244,9 @@ final class Shiny {
         case (UInt16(kVK_Escape), _, _):
             if s.tool != nil { s.tool = nil } else if s.style.enabled { s.style.enabled = false } else { closeOverlay() }
         case (UInt16(kVK_Return), _, _), (UInt16(kVK_ANSI_KeypadEnter), _, _), (_, true, "c"):
-            handle(.copy, s)
+            handle(s.scrolling ? .scroll : .copy, s)
+        case _ where s.scrolling:
+            return e
         case (_, true, "z"):
             s.undo()
         case (_, true, "s"):
@@ -185,14 +274,62 @@ final class Shiny {
 
     private func handle(_ action: OverlayAction, _ s: Session) {
         if action == .cancel { return closeOverlay() }
-        guard !s.selection.isEmpty, let shot = Shot(s) else { return }
+        guard !s.selection.isEmpty else { return }
+        if action == .scroll {
+            closeOverlay()
+            return scroll(s.selection, on: s)
+        }
+        guard let shot = Shot(s) else { return }
         closeOverlay()
+        lastArea = (s.selection, s.style)
+        remember(shot)
         switch action {
         case .copy: shot.copy(); showCard(shot, title: "Copied to clipboard")
         case .save: showSaved(shot)
         case .pin: pin(shot)
-        case .cancel: break
+        case .scroll, .cancel: break
         }
+    }
+
+    /// Records `area` while you scroll, with an outline around it and Done and Cancel below. Done copies the tall result.
+    private func scroll(_ area: CGRect, on s: Session) {
+        guard let screen = s.screen else { return }
+        busy = true
+        let rec = Scrolling(area: area, displayID: s.displayID, scale: s.scale)
+        // Cocoa puts the origin at the bottom left.
+        let frame = CGRect(x: screen.frame.minX + area.minX, y: screen.frame.maxY - area.maxY, width: area.width, height: area.height)
+        let outline = makePanel(Rectangle().strokeBorder(Color.mark, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+            .frame(width: frame.width + 8, height: frame.height + 8))
+        outline.ignoresMouseEvents = true
+        outline.setFrameOrigin(CGPoint(x: frame.minX - 4, y: frame.minY - 4))
+        weak var bar: NSPanel?
+        func end() {
+            close(outline)
+            if let bar { close(bar) }
+            busy = false
+        }
+        let b = makePanel(ScrollingBar(s: rec, done: { [weak self] in
+            guard let self, bar != nil else { return }
+            end()
+            Task {
+                guard let image = await rec.finish() else { return }
+                let shot = Shot(image, scale: s.scale, displayID: s.displayID)
+                self.remember(shot)
+                shot.copy()
+                self.showCard(shot, title: "Copied to clipboard")
+            }
+        }, cancel: {
+            guard bar != nil else { return }
+            rec.cancel()
+            end()
+        }))
+        bar = b
+        let below = frame.minY - b.frame.height
+        let y = below > screen.visibleFrame.minY ? below : min(frame.maxY, screen.visibleFrame.maxY - b.frame.height)
+        b.setFrameOrigin(CGPoint(x: frame.midX - b.frame.width / 2, y: y))
+        outline.orderFrontRegardless()
+        b.orderFrontRegardless()
+        rec.start()
     }
 
     private func showSaved(_ shot: Shot) {
@@ -203,17 +340,17 @@ final class Shiny {
     }
 
     private func showCard(_ shot: Shot, title: String) {
-        guard let screen = shot.session.screen else { return }
+        guard let screen = shot.screen else { return }
         // Weak: the panel's view holds this closure, and `panels` keeps the panel alive while it is shown.
         weak var panel: NSPanel?
-        let card = CardView(title: title, image: shot.image, drag: shot.dragItem) { [weak self] action in
+        let card = CardView(title: title, image: shot.image, canEdit: shot.editable, drag: shot.dragItem) { [weak self] action in
             guard let self, let panel else { return }
             self.close(panel)
             switch action {
             case .copy: shot.copy()
             case .save: self.showSaved(shot)
             case .pin: self.pin(shot)
-            case .edit: self.open(shot.session)
+            case .edit: if let s = shot.session { self.open(s) }
             case .dismiss: break
             }
         }
@@ -224,7 +361,7 @@ final class Shiny {
     }
 
     private func pin(_ shot: Shot) {
-        guard let screen = shot.session.screen else { return }
+        guard let screen = shot.screen else { return }
         let k = min(1, 720 / shot.size.width, 520 / shot.size.height)
         let size = CGSize(width: shot.size.width * k, height: shot.size.height * k)
         weak var panel: NSPanel?
@@ -298,26 +435,64 @@ private final class FloatingPanel: NSPanel {
     override var canBecomeKey: Bool { true }
 }
 
-/// A finished capture: the rendered image plus the session, so it can be edited again.
+/// A finished capture: the rendered image plus, while it can still be edited, the session it came from.
 struct Shot {
     let cgImage: CGImage
-    let session: Session
+    let scale: CGFloat
+    let displayID: CGDirectDisplayID
+    /// No alpha to keep, so files are written as RGB.
+    let opaque: Bool
+    /// Nil for scrolling captures (taller than the overlay can show) and older Recent entries.
+    private(set) var session: Session?
+    private(set) var date = Date.now
 
     init?(_ s: Session) {
         guard let cg = s.render() else { return nil }
-        cgImage = cg
+        self.init(cg, scale: s.scale, displayID: s.displayID, opaque: s.isOpaque)
         session = s
     }
 
-    var size: CGSize { CGSize(width: CGFloat(cgImage.width) / session.scale, height: CGFloat(cgImage.height) / session.scale) }
+    init(_ cgImage: CGImage, scale: CGFloat, displayID: CGDirectDisplayID, opaque: Bool = true) {
+        self.cgImage = cgImage
+        self.scale = scale
+        self.displayID = displayID
+        self.opaque = opaque
+    }
+
+    var editable: Bool { session != nil }
+    var screen: NSScreen? { NSScreen.screens.first { $0.displayID == displayID } }
+
+    /// The same capture without its session, so it no longer holds a whole screen in memory.
+    var withoutSession: Shot {
+        var s = self
+        s.session = nil
+        return s
+    }
+
+    var caption: String {
+        "\(Int(size.width)) × \(Int(size.height)) · \(date.formatted(date: .omitted, time: .shortened))"
+    }
+
+    /// For the Recent menu: at most 48 × 32 points, drawn when shown.
+    var thumbnail: NSImage {
+        let image = self.image
+        let k = min(48 / size.width, 32 / size.height, 1)
+        return NSImage(size: CGSize(width: size.width * k, height: size.height * k), flipped: false) { r in
+            image.draw(in: r)
+            return true
+        }
+    }
+
+    var size: CGSize { CGSize(width: CGFloat(cgImage.width) / scale, height: CGFloat(cgImage.height) / scale) }
     var image: NSImage { NSImage(cgImage: cgImage, size: size) }
 
     var png: Data? { Self.png(cgImage, size: size) }
 
     /// PNG tagged with the point size, so it pastes at the right size on Retina screens.
     /// Takes a second for a full 6K screen, so callers off the pasteboard run it in the background.
-    nonisolated static func png(_ cgImage: CGImage, size: CGSize) -> Data? {
-        let rep = NSBitmapImageRep(cgImage: cgImage)
+    /// `opaque` drops the alpha channel: files about 15% smaller, encoding about twice as slow, so only for files.
+    nonisolated static func png(_ cgImage: CGImage, size: CGSize, opaque: Bool = false) -> Data? {
+        let rep = NSBitmapImageRep(cgImage: opaque ? rgb(cgImage) ?? cgImage : cgImage)
         rep.size = size
         return rep.representation(using: .png, properties: [:])
     }
@@ -338,17 +513,26 @@ struct Shot {
     static var folderName: String { FileManager.default.displayName(atPath: folder.path) }
 
     @discardableResult
-    func save(to dir: URL = Shot.folder) -> URL? { Self.save(cgImage, size: size, to: dir) }
+    func save(to dir: URL = Shot.folder) -> URL? { Self.save(cgImage, size: size, opaque: opaque, to: dir) }
 
     /// Saves without blocking the UI.
     func saveInBackground(to dir: URL = Shot.folder) async -> URL? {
-        let (cgImage, size) = (cgImage, size)
-        return await Task.detached { Self.save(cgImage, size: size, to: dir) }.value
+        let (cgImage, size, opaque) = (cgImage, size, opaque)
+        return await Task.detached { Self.save(cgImage, size: size, opaque: opaque, to: dir) }.value
+    }
+
+    /// The image redrawn without an alpha channel.
+    nonisolated static func rgb(_ image: CGImage) -> CGImage? {
+        let ctx = CGContext(data: nil, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: 0,
+                            space: image.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)!,
+                            bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)
+        ctx?.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        return ctx?.makeImage()
     }
 
     /// Writes a PNG named like macOS screenshots, adding " (2)", " (3)"… instead of overwriting.
-    nonisolated static func save(_ cgImage: CGImage, size: CGSize, to dir: URL) -> URL? {
-        guard let png = png(cgImage, size: size) else { return nil }
+    nonisolated static func save(_ cgImage: CGImage, size: CGSize, opaque: Bool = false, to dir: URL) -> URL? {
+        guard let png = png(cgImage, size: size, opaque: opaque) else { return nil }
         let name = "Shiny Screenshot \(Self.timestamp.string(from: .now))"
         for n in 1...99 {
             let url = dir.appending(path: n == 1 ? "\(name).png" : "\(name) (\(n)).png")
@@ -375,7 +559,7 @@ struct Shot {
 
     /// For dragging the card into other apps. The file is written in the background, only when an app takes the drop.
     func dragItem() -> NSItemProvider {
-        let (cgImage, size) = (cgImage, size)
+        let (cgImage, size, opaque) = (cgImage, size, opaque)
         let provider = NSItemProvider()
         provider.registerFileRepresentation(forTypeIdentifier: UTType.png.identifier, visibility: .all) { done in
             Task.detached {
@@ -383,7 +567,7 @@ struct Shot {
                 let dir = Self.dragFolder.appending(path: UUID().uuidString)
                 do {
                     try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-                    guard let url = Self.save(cgImage, size: size, to: dir) else { throw CocoaError(.fileWriteUnknown) }
+                    guard let url = Self.save(cgImage, size: size, opaque: opaque, to: dir) else { throw CocoaError(.fileWriteUnknown) }
                     done(url, false, nil)
                 } catch {
                     done(nil, false, error)

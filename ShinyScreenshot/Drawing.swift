@@ -295,14 +295,27 @@ struct ShotView: View {
 
     var body: some View {
         // Read observed state here, not inside the Canvas closure, so changes redraw.
-        let sel = s.selection, annotations = s.annotations, editing = s.editingText
-        let full = s.bounds
-        let image = Image(decorative: s.image, scale: s.scale)
-        let pixelated = Image(decorative: s.pixelated, scale: s.scale)
+        let sel = s.selection, annotations = s.annotations.filter { $0.id != s.editingText }
+        let window = s.activeWindowShot
+        let full = window?.frame ?? s.bounds
+        let image = Image(decorative: window?.image ?? s.image, scale: s.scale)
+        // Until the blur copy is ready, blur shows flat grey, never the pixels it hides.
+        let pixelated = Image(decorative: window?.pixelated ?? s.pixelated ?? Capture.grey, scale: s.scale)
         Canvas { ctx, _ in
             ctx.translateBy(x: -sel.minX, y: -sel.minY)
             ctx.draw(image, in: full)
-            for a in annotations where a.id != editing {
+            // Spotlights dim everything else, so they go under the other marks. Source-atop keeps see-through window corners clear.
+            let spots = annotations.filter { $0.tool == .spotlight }
+            if !spots.isEmpty {
+                var dim = ctx
+                dim.blendMode = .sourceAtop
+                dim.drawLayer { l in
+                    l.fill(Path(sel), with: .color(.black.opacity(0.5)))
+                    l.blendMode = .clear
+                    for a in spots { l.fill(Path(roundedRect: a.box, cornerRadius: 8), with: .color(.black)) }
+                }
+            }
+            for a in annotations where a.tool != .spotlight {
                 draw(a, in: ctx, pixelated: pixelated, full: full)
             }
         }
@@ -351,6 +364,8 @@ private func draw(_ a: Annotation, in ctx: GraphicsContext, pixelated: Image, fu
         var l = ctx
         l.blendMode = .multiply
         l.fill(Path(roundedRect: a.box, cornerRadius: 3), with: .color(Color.mark.opacity(0.55)))
+    case .spotlight:
+        break
     case .blur:
         ctx.drawLayer { l in
             l.clip(to: Path(roundedRect: a.box, cornerRadius: 4))

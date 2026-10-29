@@ -5,7 +5,7 @@ import Testing
 /// Background mode: canvas maths, every backdrop and ratio, style extremes, and where the preview and toolbar land.
 struct BackgroundTests {
     /// Half the toolbar's rendered width (708 pt, measured by ViewTests.toolbarFitsTheWidthItIsLaidOutFor).
-    static let toolbarHalfWidth: CGFloat = 354
+    static let toolbarHalfWidth: CGFloat = 370
     static let toolbarHalfHeight: CGFloat = 20
 
     static let screens: [CGSize] = [CGSize(width: 800, height: 600), CGSize(width: 1024, height: 640), CGSize(width: 1280, height: 800),

@@ -77,7 +77,7 @@ struct ExportTests {
             s.tool = .blur
             s.drag(pt(300, 200), pt(500, 350))
             let out = Pixels(try #require(s.render()))
-            let pixelated = Pixels(s.pixelated), original = Pixels(s.image)
+            let pixelated = Pixels(s.pixelatedNow()), original = Pixels(s.image)
             var wrongInside = 0, wrongOutside = 0
             for y in stride(from: 0, to: out.height, by: 5) {
                 for x in stride(from: 0, to: out.width, by: 5) {
@@ -121,7 +121,7 @@ struct ExportTests {
         s.draft = "Still typing"
         let shot = try #require(Shot(s))
         #expect(s.editingText == nil)
-        #expect(shot.session.annotations.map(\.text) == ["Still typing"])
+        #expect(shot.session?.annotations.map(\.text) == ["Still typing"])
         let out = Pixels(shot.cgImage)
         var changed = 0
         for y in 190..<210 { for x in 100..<200 where out[x, y] != plain[x, y] { changed += 1 } }
@@ -256,7 +256,7 @@ struct ExportTests {
         let image = timed("build 6016×3384 test image") { Fixture.gradient(6016, 3384) }
         let s = timed("Session incl. Capture.pixelate 6016×3384 @2x, incl. drawing") {
             let s = Fixture.session(image, scale: 2)
-            _ = s.pixelated.dataProvider?.data
+            _ = s.pixelatedNow().dataProvider?.data
             return s
         }
         s.selectAll()

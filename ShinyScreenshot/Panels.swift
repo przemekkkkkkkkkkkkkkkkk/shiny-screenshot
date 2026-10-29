@@ -6,6 +6,7 @@ enum CardAction { case copy, save, pin, edit, dismiss }
 struct CardView: View {
     let title: String
     let image: NSImage
+    var canEdit = true
     let drag: () -> NSItemProvider
     let act: (CardAction) -> Void
     @State private var hovering = false
@@ -35,7 +36,7 @@ struct CardView: View {
                 CardButton(title: "Copy", symbol: "doc.on.doc") { act(.copy) }
                 CardButton(title: "Save", symbol: "square.and.arrow.down") { act(.save) }
                 CardButton(title: "Pin", symbol: "pin") { act(.pin) }
-                CardButton(title: "Edit", symbol: "pencil") { act(.edit) }
+                if canEdit { CardButton(title: "Edit", symbol: "pencil") { act(.edit) } }
             }
         }
         .padding(12)
