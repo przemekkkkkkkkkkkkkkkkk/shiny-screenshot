@@ -32,7 +32,7 @@ struct OverlayView: View {
                     .onEnded { s.dragEnded(from: $0.startLocation, to: $0.location) })
                 .onContinuousHover { phase in
                     if case .active(let p) = phase, s.phase == .selecting { s.cursor = p }
-                    NSCursor.crosshair.set()
+                    (s.tool == .text ? NSCursor.iBeam : .crosshair).set()
                 }
             if let w = s.hoveredWindow {
                 RoundedRectangle(cornerRadius: 10)
@@ -53,12 +53,21 @@ struct OverlayView: View {
                 SelectionChrome(r: s.selection, scale: s.scale)
             }
             if let id = s.editingText, let a = s.annotations.first(where: { $0.id == id }) {
-                TextDraft(s: s, color: a.color)
-                    .offset(x: a.points[0].x, y: a.points[0].y - 15)
+                let r = a.labelFrame
+                // A new identity per label, so each one takes the keyboard when it opens.
+                TextDraft(s: s, a: a).id(id)
+                    .offset(x: r.minX, y: r.minY)
+                LabelBar(s: s)
+                    .offset(x: r.minX, y: r.minY > 56 ? r.minY - 44 : r.maxY + 8)
             }
             if s.phase == .editing {
                 Toolbar(s: s, act: act)
                     .position(s.toolbarCenter(around: preview ?? s.selection))
+                if preview == nil, s.tool == .text || s.editingText != nil {
+                    Pill(text: s.editingText == nil ? "Click to add text. Click a label to edit it, drag to move it."
+                                                    : "Return to finish, ⌥Return for a new line.")
+                        .position(x: s.size.width / 2, y: 64)
+                }
             }
             if preview != nil {
                 BackgroundPanel(s: s)
@@ -117,25 +126,62 @@ private struct SelectionChrome: View {
     }
 }
 
+/// The label being typed, styled like the finished one so nothing jumps on Return.
 private struct TextDraft: View {
     @Bindable var s: Session
-    let color: Color
+    let a: Annotation
     @FocusState private var focused: Bool
 
     var body: some View {
-        TextField("Type a note", text: $s.draft)
+        let shape = RoundedRectangle(cornerRadius: a.cornerRadius)
+        TextField("Type a note", text: $s.draft, axis: .vertical)
             .textFieldStyle(.plain)
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(color == .mark ? .black : .white)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
-            .frame(minWidth: 140)
+            .font(Font(a.font as CTFont))
+            .foregroundStyle(a.textColor)
+            .shadow(color: .black.opacity(a.filled ? 0 : 0.75), radius: max(1.5, a.size / 10))
+            .padding(.horizontal, a.inset.width)
+            .padding(.vertical, a.inset.height)
+            .frame(minWidth: a.size * 8, alignment: .leading)
             .fixedSize()
-            .background(color, in: RoundedRectangle(cornerRadius: 7))
+            .background(a.filled ? a.color : .clear, in: shape)
+            // Plain text has no tag, so outline where the field is.
+            .overlay(shape.strokeBorder(.white.opacity(a.filled ? 0 : 0.7), style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
             .focused($focused)
             .task { focused = true }
+            // Picking a colour, size or look keeps typing in the label.
+            .onChange(of: a.size) { focused = true }
+            .onChange(of: a.filled) { focused = true }
+            .onChange(of: a.color) { focused = true }
             .onSubmit { s.commitText() }
             .onExitCommand { s.commitText() }
+    }
+}
+
+/// Look and size of the label being typed, floating just above it.
+private struct LabelBar: View {
+    @Bindable var s: Session
+
+    var body: some View {
+        let i = labelSizes.firstIndex(of: s.labelSize) ?? 1
+        HStack(spacing: 2) {
+            BarButton(symbol: "capsule.fill", on: s.labelFilled, help: "Text on a solid tag") { s.labelFilled = true }
+            BarButton(symbol: "textformat", on: !s.labelFilled, help: "Plain text with an outline") { s.labelFilled = false }
+            Divider().frame(height: 20).padding(.horizontal, 4)
+            BarButton(symbol: "textformat.size.smaller", help: "Smaller") { s.labelSize = labelSizes[max(i - 1, 0)] }
+                .disabled(i == 0)
+            BarButton(symbol: "textformat.size.larger", help: "Larger") { s.labelSize = labelSizes[min(i + 1, labelSizes.count - 1)] }
+                .disabled(i == labelSizes.count - 1)
+            Divider().frame(height: 20).padding(.horizontal, 4)
+            BarButton(symbol: "trash", help: "Delete label") {
+                s.draft = ""
+                s.commitText()
+            }
+        }
+        .padding(4)
+        .background(Color(white: 0.11).opacity(0.94), in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.12)))
+        .environment(\.colorScheme, .dark)
+        .fixedSize()
     }
 }
 
