@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/pkalisiewicz/shiny-screenshot/releases/latest"><img src="https://img.shields.io/github/v/release/pkalisiewicz/shiny-screenshot?label=download" alt="Latest release"></a>
+  <a href="https://github.com/przemekkkkkkkkkkkkkkkkk/shiny-screenshot/releases/latest"><img src="https://img.shields.io/github/v/release/przemekkkkkkkkkkkkkkkkk/shiny-screenshot?label=download" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/macOS-15%2B-blue" alt="macOS 15+">
 </p>
 
@@ -47,7 +47,7 @@
 
 ## Install
 
-Download the DMG from the [latest release](https://github.com/pkalisiewicz/shiny-screenshot/releases/latest) and drag Shiny Screenshot to Applications. It's signed and notarized, and updates itself through Sparkle.
+Download the DMG from the [latest release](https://github.com/przemekkkkkkkkkkkkkkkkk/shiny-screenshot/releases/latest) and drag Shiny Screenshot to Applications. It's signed and notarized, and updates itself through Sparkle.
 
 ## Build from source
 
@@ -65,13 +65,17 @@ The first capture asks for Screen Recording permission (System Settings › Priv
 
 | | |
 |---|---|
-| ⇧⌘2 | Capture an area (also in the menu bar; change it in Settings) |
+| ⇧⌘2 | Capture an area (also in the menu bar; change shortcuts in Settings) |
+| ⌥⇧⌘2 | Capture a window: just the window, even if something covers it |
+| ⌃⇧⌘2 | Capture the last area again, with its background |
 | Drag, or click a window | Select |
-| A R H B N T P | Arrow, rectangle, highlight, blur, numbered step, text, pen |
+| A R H S B N T P | Arrow, rectangle, highlight, spotlight, blur, numbered step, text, pen |
 | Esc | Drop the tool, then close the background panel, then cancel |
 | Return or ⌘C | Copy and close |
 | ⌘S | Save to Desktop, or the folder picked in Settings |
 | ⌘Z | Undo |
+
+The menu bar also has Capture Full Screen, Capture Scrolling Area (select the part that scrolls, press Return, scroll down, then Done; the tall result is copied), Capture After Delay (3, 5 or 10 seconds), and Recent, which brings back the last five captures.
 
 With no tool selected, drag inside the selection to move it, or drag its handles to resize. After copying, a card in the corner lets you drag the image into another app, save it, pin it above all windows, or reopen it with every annotation still editable.
 
@@ -79,7 +83,7 @@ Settings (menu bar icon › Settings…) holds the shortcut, save folder, open a
 
 ## Release
 
-`scripts/release.sh` builds, notarizes and staples the app and DMG, then writes the Sparkle `appcast.xml`. Bump the version in `project.yml` first. Publishing the DMG and `appcast.xml` as a GitHub release of `pkalisiewicz/shiny-screenshot` is what installed copies check for updates.
+`scripts/release.sh` builds, notarizes and staples the app and DMG, then writes the Sparkle `appcast.xml`. Bump the version in `project.yml` first. Publishing the DMG and `appcast.xml` as a GitHub release of `przemekkkkkkkkkkkkkkkkk/shiny-screenshot` is what installed copies check for updates.
 
 ## Tests
 
