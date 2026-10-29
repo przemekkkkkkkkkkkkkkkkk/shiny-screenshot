@@ -179,6 +179,50 @@ struct AnnotationTests {
         #expect(s.editingText.map { id in s.annotations.contains { $0.id == id } } ?? true)
     }
 
+    @Test func clickingALabelEditsItAndDraggingMovesIt() throws {
+        s.tool = .text
+        s.color = palette[4]
+        s.tap(pt(300, 300))
+        s.draft = "One"
+        s.commitText()
+        let id = try #require(s.annotations.first?.id)
+        for tool in [nil, Tool.text] {
+            s.tool = tool
+            s.tap(pt(310, 300))                                // on the label: edit it, don't add another
+            #expect(s.editingText == id && s.draft == "One", "\(String(describing: tool))")
+            s.commitText()
+        }
+        s.drag(pt(310, 300), pt(410, 350))
+        #expect(s.annotations.count == 1 && s.annotations[0].points == [pt(400, 350)])
+        #expect(s.selection == Self.selection, "moving a label must not move the selection")
+        s.tool = .arrow                                        // other tools draw over labels
+        s.drag(pt(410, 350), pt(500, 400))
+        #expect(s.annotations.map(\.tool) == [.text, .arrow])
+    }
+
+    @Test func colourSizeAndLookChangeTheLabelBeingTyped() throws {
+        s.tool = .text
+        s.tap(pt(300, 300))
+        s.draft = "Hi"
+        s.color = palette[3]
+        s.labelSize = 28
+        s.labelFilled = false
+        s.commitText()
+        let a = try #require(s.annotations.first)
+        #expect(a.color == palette[3] && a.size == 28 && !a.filled)
+        s.tap(pt(300, 450))                                    // the next label starts with the same choices
+        let b = try #require(s.annotations.last)
+        #expect(b.size == 28 && !b.filled)
+    }
+
+    @Test func multiLineLabelsGrowDownFromTheClick() {
+        var a = Annotation(tool: .text, color: palette[0], points: [pt(300, 300)], text: "One")
+        let one = a.labelFrame
+        a.text = "One\nTwo"
+        #expect(a.labelFrame.minY == one.minY && a.labelFrame.height > one.height * 1.5)
+        #expect(abs(one.midY - 300) < 1, "a single line is centred on the click")
+    }
+
     // MARK: Placement
 
     @Test func clicksOutsideTheSelectionPlaceNothing() {
