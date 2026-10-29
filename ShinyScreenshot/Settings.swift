@@ -10,7 +10,11 @@ struct Shortcut: Equatable {
     var key: String
 
     static let standard = Shortcut(keyCode: UInt32(kVK_ANSI_2), modifiers: UInt32(cmdKey | shiftKey), key: "2")
-    static var saved: Shortcut { UserDefaults.standard.string(forKey: "shortcut").flatMap(Shortcut.init) ?? .standard }
+    static var saved: Shortcut { saved(.area) }
+
+    static func saved(_ a: HotkeyAction) -> Shortcut {
+        UserDefaults.standard.string(forKey: a.defaultsKey).flatMap(Shortcut.init) ?? a.standard
+    }
 
     private static let flags: [(carbon: Int, symbol: String, swiftUI: SwiftUI.EventModifiers)] = [
         (controlKey, "⌃", .control), (optionKey, "⌥", .option), (shiftKey, "⇧", .shift), (cmdKey, "⌘", .command),
@@ -36,6 +40,32 @@ struct Shortcut: Equatable {
         guard let c = key.first, key.count == 1 else { return nil }
         let m = Self.flags.filter { modifiers & UInt32($0.carbon) != 0 }.map(\.swiftUI)
         return KeyboardShortcut(KeyEquivalent(c), modifiers: SwiftUI.EventModifiers(m))
+    }
+}
+
+/// What each global shortcut captures.
+enum HotkeyAction: String, CaseIterable {
+    case area, window, again
+
+    /// The area shortcut keeps the key it had before there were others.
+    var defaultsKey: String { self == .area ? "shortcut" : "shortcut.\(rawValue)" }
+
+    /// ⇧⌘2 for an area, with ⌥ for a window and ⌃ for the last area again.
+    var standard: Shortcut {
+        let extra = switch self {
+        case .area: 0
+        case .window: optionKey
+        case .again: controlKey
+        }
+        return Shortcut(keyCode: UInt32(kVK_ANSI_2), modifiers: UInt32(cmdKey | shiftKey | extra), key: "2")
+    }
+
+    var title: String {
+        switch self {
+        case .area: "Capture area"
+        case .window: "Capture window"
+        case .again: "Capture last area again"
+        }
     }
 }
 
@@ -101,7 +131,6 @@ final class Updates: NSObject, SPUStandardUserDriverDelegate {
 }
 
 struct SettingsView: View {
-    @AppStorage("shortcut") private var shortcut = Shortcut.standard
     @AppStorage("saveFolder") private var folder = URL.desktopDirectory
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
     @State private var autoCheck = Updates.shared.updater.automaticallyChecksForUpdates
@@ -122,7 +151,9 @@ struct SettingsView: View {
             }
 
             Section("Capture") {
-                LabeledContent("Shortcut") { ShortcutRecorder(shortcut: $shortcut) }
+                ForEach(HotkeyAction.allCases, id: \.self) { a in
+                    LabeledContent(a.title) { ShortcutRecorder(action: a) }
+                }
                 LabeledContent {
                     Button("Choose…", action: chooseFolder)
                 } label: {
@@ -186,9 +217,16 @@ struct SettingsView: View {
 
 /// Click, then type the new shortcut. Esc cancels.
 private struct ShortcutRecorder: View {
-    @Binding var shortcut: Shortcut
+    let action: HotkeyAction
+    @AppStorage private var shortcut: Shortcut
     @State private var monitor: Any?
-    @State private var taken = !Shiny.shared.shortcutRegistered
+    @State private var taken: Bool
+
+    init(action: HotkeyAction) {
+        self.action = action
+        _shortcut = AppStorage(wrappedValue: action.standard, action.defaultsKey)
+        _taken = State(initialValue: !Shiny.shared.isRegistered(action))
+    }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -205,12 +243,12 @@ private struct ShortcutRecorder: View {
     }
 
     private func start() {
-        // Off while recording, so pressing the current shortcut records it instead of starting a capture.
-        Shiny.shared.unregisterShortcut()
+        // Off while recording, so pressing a current shortcut records it instead of starting a capture.
+        Shiny.shared.unregisterShortcuts()
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { e in
             if e.keyCode == UInt16(kVK_Escape) {
                 stop()
-            } else if let s = Shortcut(e) {
+            } else if let s = Shortcut(e), !HotkeyAction.allCases.contains(where: { $0 != action && Shortcut.saved($0) == s }) {
                 shortcut = s
                 stop()
             } else {
@@ -224,6 +262,7 @@ private struct ShortcutRecorder: View {
         guard let monitor else { return }
         NSEvent.removeMonitor(monitor)
         self.monitor = nil
-        taken = !Shiny.shared.registerShortcut()
+        Shiny.shared.registerShortcuts()
+        taken = !Shiny.shared.isRegistered(action)
     }
 }

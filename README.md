@@ -65,13 +65,17 @@ The first capture asks for Screen Recording permission (System Settings › Priv
 
 | | |
 |---|---|
-| ⇧⌘2 | Capture an area (also in the menu bar; change it in Settings) |
+| ⇧⌘2 | Capture an area (also in the menu bar; change shortcuts in Settings) |
+| ⌥⇧⌘2 | Capture a window: just the window, even if something covers it |
+| ⌃⇧⌘2 | Capture the last area again, with its background |
 | Drag, or click a window | Select |
-| A R H B N T P | Arrow, rectangle, highlight, blur, numbered step, text, pen |
+| A R H S B N T P | Arrow, rectangle, highlight, spotlight, blur, numbered step, text, pen |
 | Esc | Drop the tool, then close the background panel, then cancel |
 | Return or ⌘C | Copy and close |
 | ⌘S | Save to Desktop, or the folder picked in Settings |
 | ⌘Z | Undo |
+
+The menu bar also has Capture Full Screen, Capture Scrolling Area (select the part that scrolls, press Return, scroll down, then Done; the tall result is copied), Capture After Delay (3, 5 or 10 seconds), and Recent, which brings back the last five captures.
 
 With no tool selected, drag inside the selection to move it, or drag its handles to resize. After copying, a card in the corner lets you drag the image into another app, save it, pin it above all windows, or reopen it with every annotation still editable.
 

@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum Tool: String, CaseIterable, Identifiable {
-    case arrow, rect, highlight, blur, step, text, pen
+    case arrow, rect, highlight, spotlight, blur, step, text, pen
 
     var id: Self { self }
 
@@ -10,6 +10,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .arrow: "Arrow"
         case .rect: "Rectangle"
         case .highlight: "Highlight"
+        case .spotlight: "Spotlight"
         case .blur: "Blur"
         case .step: "Numbered step"
         case .text: "Text"
@@ -22,6 +23,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .arrow: "arrow.up.right"
         case .rect: "rectangle"
         case .highlight: "highlighter"
+        case .spotlight: "flashlight.on.fill"
         case .blur: "checkerboard.rectangle"
         case .step: "1.circle"
         case .text: "textformat"
@@ -34,6 +36,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .arrow: "a"
         case .rect: "r"
         case .highlight: "h"
+        case .spotlight: "s"
         case .blur: "b"
         case .step: "n"
         case .text: "t"
@@ -63,10 +66,13 @@ final class Session {
     enum Phase { case selecting, editing }
 
     let image: CGImage
-    let pixelated: CGImage
+    /// Same screen, pixelated, for the blur tool. Made in the background while the overlay is open, dropped when it closes.
+    private(set) var pixelated: CGImage?
+    @ObservationIgnored private var pixelating: Task<Void, Never>?
+    @ObservationIgnored private let noiseSeed = Capture.randomSeed()
     let scale: CGFloat
     let size: CGSize
-    let windows: [CGRect]
+    let windows: [Capture.Window]
     let displayID: CGDirectDisplayID
 
     var phase = Phase.selecting
@@ -83,6 +89,12 @@ final class Session {
     var editingText: UUID?
     var draft = ""
     var cursor: CGPoint?
+    /// The clicked window captured on its own; arrives a moment after the click.
+    var windowShot: Capture.WindowShot?
+    /// Window capture: dragging selects nothing, only clicking a window does.
+    var windowsOnly = false
+    /// Scrolling capture: the selection is the area to record, not to mark up.
+    var scrolling = false
 
     /// `create` remembers what to restore if the new selection ends up too small.
     private enum Drag { case create(previous: CGRect, phase: Phase), move(CGRect), resize(Handle, CGRect), draw(UUID) }
@@ -93,7 +105,6 @@ final class Session {
 
     init(_ f: Capture.Frozen, displayID: CGDirectDisplayID) {
         image = f.image
-        pixelated = f.pixelated
         scale = f.scale
         size = f.size
         windows = f.windows
@@ -106,7 +117,12 @@ final class Session {
     /// Before anything is selected, the window under the cursor is offered as the selection.
     var hoveredWindow: CGRect? {
         guard phase == .selecting, selection.isEmpty, let cursor else { return nil }
-        return windows.first { $0.contains(cursor) }
+        return windows.first { $0.frame.contains(cursor) }?.frame.intersection(bounds)
+    }
+
+    /// The window shot, while the selection is still the window it was taken for.
+    var activeWindowShot: Capture.WindowShot? {
+        windowShot.flatMap { $0.selection == selection ? $0 : nil }
     }
 
     func selectAll() {
@@ -167,7 +183,7 @@ final class Session {
     }
 
     private func beginDrag(at p: CGPoint) -> Drag? {
-        if phase == .selecting { return .create(previous: .zero, phase: .selecting) }
+        if phase == .selecting { return windowsOnly ? nil : .create(previous: .zero, phase: .selecting) }
         if style.enabled { return nil }
         // Handle hit areas shrink with the selection so small selections can still be moved and drawn in.
         let reach = min(10, min(selection.width, selection.height) / 4)
@@ -185,9 +201,10 @@ final class Session {
 
     private func click(at p: CGPoint) {
         if phase == .selecting {
-            if let w = windows.first(where: { $0.contains(p) }) {
-                selection = w.intersection(bounds)
+            if let w = windows.first(where: { $0.frame.contains(p) }) {
+                selection = w.frame.intersection(bounds)
                 phase = .editing
+                captureWindow(w)
             }
             return
         }
@@ -200,6 +217,12 @@ final class Session {
             editingText = a.id
         }
         annotations.append(a)
+    }
+
+    private func captureWindow(_ w: Capture.Window) {
+        guard w.id != kCGNullWindowID, !scrolling else { return }
+        let (selection, scale) = (selection, scale)
+        Task { if let shot = try? await Capture.window(w, for: selection, scale: scale) { windowShot = shot } }
     }
 
     func commitText() {
@@ -254,8 +277,41 @@ final class Session {
         CGPoint(x: (p.x * scale).rounded() / scale, y: (p.y * scale).rounded() / scale)
     }
 
+    func preparePixelated() {
+        guard pixelated == nil, pixelating == nil else { return }
+        let (image, scale, seed) = (image, scale, noiseSeed)
+        pixelating = Task {
+            let p = await Task.detached { Capture.pixelate(image, scale: scale, seed: seed) ?? Capture.grey }.value
+            guard !Task.isCancelled else { return }
+            pixelated = p
+            pixelating = nil
+        }
+    }
+
+    /// Frees the blur copy: a closed session (kept for Edit) only needs the screen itself.
+    func releasePixelated() {
+        pixelating?.cancel()
+        pixelating = nil
+        pixelated = nil
+    }
+
+    /// The blur copy, made on the spot if the background one isn't ready.
+    @discardableResult
+    func pixelatedNow() -> CGImage {
+        if let pixelated { return pixelated }
+        releasePixelated()
+        let p = Capture.pixelate(image, scale: scale, seed: noiseSeed) ?? Capture.grey
+        pixelated = p
+        return p
+    }
+
+    /// Nothing see-through: no transparent background and no window corners. Saved as RGB, which is smaller.
+    var isOpaque: Bool { style.enabled ? style.backdrop != .clear : activeWindowShot == nil }
+
     func render() -> CGImage? {
         commitText()
+        // Blur must never fall back to grey in the export.
+        if activeWindowShot == nil, annotations.contains(where: { $0.tool == .blur }) { pixelatedNow() }
         let renderer = ImageRenderer(content: ComposedView(s: self))
         renderer.scale = scale
         return renderer.cgImage
@@ -274,7 +330,7 @@ final class Session {
     /// Below the target if there is room, else above it (clear of the notch), else inside its bottom edge.
     /// On screens too narrow to fit it beside the background panel, it docks at the bottom instead.
     func toolbarCenter(around r: CGRect) -> CGPoint {
-        let half: CGFloat = 370
+        let half: CGFloat = 386
         if style.enabled && size.width - 300 < 2 * half {
             return CGPoint(x: max(size.width / 2, min(half, size.width - half)), y: size.height - 34)
         }

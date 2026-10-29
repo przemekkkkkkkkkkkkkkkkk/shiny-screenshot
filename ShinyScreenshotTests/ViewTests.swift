@@ -59,14 +59,15 @@ struct ViewTests {
         CGGetActiveDisplayList(count, &ids, &count)
         for id in ids {
             let frame = CGDisplayBounds(id), local = CGRect(origin: .zero, size: frame.size)
-            let windows = Capture.windowFrames(on: frame, excluding: getpid())
+            let windows = Capture.windows(on: frame, excluding: getpid())
             print("WINDOWS display \(id) at \(frame): \(windows.count) selectable windows")
             for w in windows {
-                #expect(local.contains(w), "\(w) outside \(local)")
-                #expect(w.width > 40 && w.height > 40)
+                let visible = w.frame.intersection(local)
+                #expect(visible.width > 40 && visible.height > 40, "\(w.frame) barely on \(local)")
+                #expect(w.id != kCGNullWindowID)
             }
         }
-        #expect(Capture.windowFrames(on: CGRect(x: 100_000, y: -100_000, width: 1920, height: 1080), excluding: getpid()).isEmpty)
+        #expect(Capture.windows(on: CGRect(x: 100_000, y: -100_000, width: 1920, height: 1080), excluding: getpid()).isEmpty)
     }
 
     /// A display whose origin is not (0, 0) sees the same windows, shifted into its own coordinates.
@@ -74,10 +75,10 @@ struct ViewTests {
         let main = CGDisplayBounds(CGMainDisplayID())
         let offset = CGRect(x: main.minX + 200, y: main.minY + 100, width: main.width - 300, height: main.height - 150)
         let local = CGRect(origin: .zero, size: offset.size)
-        let expected = Capture.windowFrames(on: main, excluding: getpid())
-            .map { $0.offsetBy(dx: -200, dy: -100).intersection(local) }
-            .filter { $0.width > 40 && $0.height > 40 }
-        #expect(Capture.windowFrames(on: offset, excluding: getpid()) == expected)
+        let expected = Capture.windows(on: main, excluding: getpid())
+            .map { $0.frame.offsetBy(dx: -200, dy: -100) }
+            .filter { let v = $0.intersection(local); return v.width > 40 && v.height > 40 }
+        #expect(Capture.windows(on: offset, excluding: getpid()).map(\.frame) == expected)
     }
 
     // MARK: Overlay
@@ -119,7 +120,7 @@ struct ViewTests {
         let background = rep.colorAt(x: 2, y: y)
         let xs = (0..<rep.pixelsWide).filter { rep.colorAt(x: $0, y: y) != background }
         let width = CGFloat((xs.last ?? 0) - (xs.first ?? 0) + 1) / k
-        print("MEASURE toolbar width \(width) pt (toolbarCenter assumes 740)")
+        print("MEASURE toolbar width \(width) pt (toolbarCenter assumes 772)")
         #expect(width <= 2 * BackgroundTests.toolbarHalfWidth, "toolbar is \(width) pt")
         #expect(width > 600, "toolbar not found in the snapshot")
     }
