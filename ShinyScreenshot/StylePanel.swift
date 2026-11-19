@@ -60,12 +60,11 @@ struct StylePanel: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .scrollIndicators(.never)
+                .softBottomEdge()
             }
         }
-        .frame(width: 430, height: min(720, s.size.height - 40))
-        .background(Color(white: 0.11).opacity(0.95), in: RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(.white.opacity(0.12)))
-        .environment(\.colorScheme, .dark)
+        .frame(width: 430, height: min(720, s.size.height - 40 - (s.toolbarDocked ? 84 : 0)))
+        .glassChrome(RoundedRectangle(cornerRadius: 30, style: .continuous))
         .onChange(of: s.style.redact) { s.detectSensitive() }
         .onAppear { s.detectSensitive() }
     }
@@ -96,7 +95,7 @@ struct StylePanel: View {
                                     .padding(.horizontal, 7).padding(.vertical, 4)
                             }
                             .frame(width: 88)
-                            .background(.white.opacity(0.06))
+                            .background(.primary.opacity(0.06))
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
                         .buttonStyle(.plain)
@@ -148,7 +147,7 @@ struct StylePanel: View {
         Group2("Inset") { LabeledSlider(label: "Inset", value: $s.style.inset, range: 0...48, text: "\(Int(s.style.inset))") }
         Group2("Corners") {
             HoverReveal {
-                Chips(options: [CGFloat(0), 12, 24], selection: $s.style.radius,
+                Segments(options: [CGFloat(0), 12, 24], selection: $s.style.radius,
                       label: { $0 == 0 ? "Sharp" : $0 == 12 ? "Curved" : "Round" }, hint: { "\(Int($0)) pt corners" })
             } more: {
                 LabeledSlider(label: "Radius", value: $s.style.radius, range: 0...40, text: "\(Int(s.style.radius))")
@@ -165,7 +164,7 @@ struct StylePanel: View {
                 LabeledSlider(label: "Opacity", value: $s.style.shadow, range: 0...1, text: "\(Int(s.style.shadow * 100))%")
             }
         }
-        Group2("Layout") { Chips(options: ShotLayout.allCases, selection: $s.style.layout, label: \.rawValue, hint: { "\($0.rawValue) shot" }) }
+        Group2("Layout") { Segments(options: ShotLayout.allCases, selection: $s.style.layout, label: \.rawValue, hint: { "\($0.rawValue) shot" }) }
         Group2("Privacy") {
             Toggle("Hide emails, keys and card numbers", isOn: $s.style.redact).toggleStyle(.switch).controlSize(.mini).tint(Color.mark)
             if s.style.redact {
@@ -213,7 +212,7 @@ struct StylePanel: View {
                 }
             }
             if auto {
-                Chips(options: Ratio.allCases, selection: $s.style.ratio, label: \.rawValue, hint: \.hint)
+                Segments(options: Ratio.allCases, selection: $s.style.ratio, label: \.rawValue, hint: \.hint)
             }
         }
         Group2("Balance") {
@@ -234,7 +233,7 @@ struct StylePanel: View {
         Group2("Transform") {
             LabeledSlider(label: "Zoom", value: $s.style.zoom, range: 0.5...1.3, text: "\(Int((s.style.zoom * 100).rounded()))%")
             LabeledSlider(label: "Rotate", value: $s.style.rotation, range: -20...20, text: "\(Int(s.style.rotation))°")
-            Chips(options: Tilt.allCases, selection: $s.style.tilt, label: \.rawValue, hint: { "\($0.rawValue) perspective" })
+            Segments(options: Tilt.allCases, selection: $s.style.tilt, label: \.rawValue, hint: { "\($0.rawValue) perspective" })
             LabeledSlider(label: "Tilt X", value: $s.style.tiltX, range: -35...35, text: "\(Int(s.style.tiltX))°")
             LabeledSlider(label: "Tilt Y", value: $s.style.tiltY, range: -35...35, text: "\(Int(s.style.tiltY))°")
         }
@@ -253,14 +252,14 @@ struct StylePanel: View {
         }
         Group2("Pattern") {
             HoverReveal {
-                Chips(options: Pattern.allCases, selection: $s.style.pattern, label: \.rawValue, hint: { "\($0.rawValue) pattern" })
+                Segments(options: Pattern.allCases, selection: $s.style.pattern, label: \.rawValue, hint: { "\($0.rawValue) pattern" })
             } more: {
                 LabeledSlider(label: "Amount", value: $s.style.patternAmount, range: 0.05...0.6, text: "\(Int(s.style.patternAmount / 0.6 * 100))%")
             }
         }
-        Group2("Light") { Chips(options: LightScene.allCases, selection: $s.style.light, label: \.rawValue, hint: { "\($0.rawValue) light" }) }
-        Group2("Shapes") { Chips(options: Shapes.allCases, selection: $s.style.shapes, label: \.rawValue, hint: { "\($0.rawValue) behind the shot" }) }
-        Group2("VFX") { Chips(options: VFX.allCases, selection: $s.style.vfx, label: \.rawValue, hint: { "\($0.rawValue) effect" }) }
+        Group2("Light") { Segments(options: LightScene.allCases, selection: $s.style.light, label: \.rawValue, hint: { "\($0.rawValue) light" }) }
+        Group2("Shapes") { Segments(options: Shapes.allCases, selection: $s.style.shapes, label: \.rawValue, hint: { "\($0.rawValue) behind the shot" }) }
+        Group2("VFX") { Segments(options: VFX.allCases, selection: $s.style.vfx, label: \.rawValue, hint: { "\($0.rawValue) effect" }) }
         Toggle("Vignette", isOn: $s.style.vignette).toggleStyle(.switch).controlSize(.mini).tint(Color.mark)
     }
 
@@ -273,16 +272,16 @@ struct StylePanel: View {
                 PanelField(prompt: "Title", text: $s.style.title)
                 PanelField(prompt: "Description", text: $s.style.subtitle)
             }
-            Chips(options: Heading.allCases, selection: Binding { s.style.heading } set: { s.style.apply($0) },
+            Segments(options: Heading.allCases, selection: Binding { s.style.heading } set: { s.style.apply($0) },
                   label: \.rawValue, hint: \.hint)
             if s.heading != nil {
-                Chips(options: Array(TextFont.allCases.prefix(4)), selection: $s.style.font, label: \.name, hint: \.hint)
-                Chips(options: Array(TextFont.allCases.suffix(4)), selection: $s.style.font, label: \.name, hint: \.hint)
-                Chips(options: TextWeight.allCases, selection: $s.style.weight, label: \.rawValue, hint: \.hint)
+                Segments(options: Array(TextFont.allCases.prefix(4)), selection: $s.style.font, label: \.name, hint: \.hint)
+                Segments(options: Array(TextFont.allCases.suffix(4)), selection: $s.style.font, label: \.name, hint: \.hint)
+                Segments(options: TextWeight.allCases, selection: $s.style.weight, label: \.rawValue, hint: \.hint)
                 HStack(spacing: 8) {
-                    Chips(options: [false, true], selection: $s.style.below,
+                    Segments(options: [false, true], selection: $s.style.below,
                           label: { $0 ? "Below" : "Above" }, hint: { $0 ? "Text under the shot" : "Text over the shot" })
-                    Chips(options: TextAlign.allCases, selection: $s.style.align, label: \.rawValue, hint: \.hint)
+                    Segments(options: TextAlign.allCases, selection: $s.style.align, label: \.rawValue, hint: \.hint)
                 }
                 ColorRow(selection: $s.style.textColor)
                 LabeledSlider(label: "Text size", value: $s.style.textScale, range: 0.6...1.8,
@@ -301,7 +300,7 @@ struct StylePanel: View {
             if s.style.watermark {
                 PanelField(prompt: "@handle or yoursite.com", text: $s.style.watermarkText)
                 HStack {
-                    Chips(options: [true, false], selection: $s.style.watermarkPill, label: { $0 ? "Pill" : "Plain" }, hint: { $0 ? "On a dark pill" : "Text only" })
+                    Segments(options: [true, false], selection: $s.style.watermarkPill, label: { $0 ? "Pill" : "Plain" }, hint: { $0 ? "On a dark pill" : "Text only" })
                     Spacer(minLength: 16)
                     Grid(horizontalSpacing: 3, verticalSpacing: 3) {
                         GridRow { corner(.topLeft); corner(.topRight) }
@@ -315,7 +314,7 @@ struct StylePanel: View {
 
     private func corner(_ c: Corner) -> some View {
         Button { s.style.watermarkCorner = c } label: {
-            RoundedRectangle(cornerRadius: 4).fill(s.style.watermarkCorner == c ? Color.mark : .white.opacity(0.14)).frame(width: 18, height: 14)
+            RoundedRectangle(cornerRadius: 4).fill(s.style.watermarkCorner == c ? Color.mark : .primary.opacity(0.14)).frame(width: 18, height: 14)
         }
         .buttonStyle(.plain)
     }
@@ -324,8 +323,8 @@ struct StylePanel: View {
 
     @ViewBuilder private var exportPane: some View {
         Group2("Image") {
-            Chips(options: ExportFormat.allCases, selection: $s.style.format, label: \.rawValue, hint: { "Save as \($0.rawValue)" })
-            Chips(options: ExportSize.allCases, selection: $s.style.size, label: \.rawValue, hint: { $0 == .native ? "The screen's own resolution" : "\($0.rawValue) export" })
+            Segments(options: ExportFormat.allCases, selection: $s.style.format, label: \.rawValue, hint: { "Save as \($0.rawValue)" })
+            Segments(options: ExportSize.allCases, selection: $s.style.size, label: \.rawValue, hint: { $0 == .native ? "The screen's own resolution" : "\($0.rawValue) export" })
             Toggle("Leave the background see-through", isOn: $s.style.transparent).toggleStyle(.switch).controlSize(.mini).tint(Color.mark)
             HStack {
                 Text("Size").font(.system(size: 12)).foregroundStyle(.secondary)
@@ -343,8 +342,8 @@ struct StylePanel: View {
         }
         Group2(s.video == nil ? "Video with motion" : "Recording") {
             if s.video == nil {
-                Chips(options: Array(Motion.allCases.prefix(3)), selection: $s.style.motion, label: \.rawValue, hint: { "\($0.rawValue) camera move" })
-                Chips(options: Array(Motion.allCases.suffix(3)), selection: $s.style.motion, label: \.rawValue, hint: { "\($0.rawValue) camera move" })
+                Segments(options: Array(Motion.allCases.prefix(3)), selection: $s.style.motion, label: \.rawValue, hint: { "\($0.rawValue) camera move" })
+                Segments(options: Array(Motion.allCases.suffix(3)), selection: $s.style.motion, label: \.rawValue, hint: { "\($0.rawValue) camera move" })
                 LabeledSlider(label: "Length", value: Binding { CGFloat(s.style.seconds) } set: { s.style.seconds = Double($0.rounded()) },
                               range: 2...10, text: "\(Int(s.style.seconds)) s")
                 Button("Save Video", systemImage: "film") { act(.video) }.controlSize(.small)
@@ -377,7 +376,7 @@ private struct FillPane: View {
     private var recents: [Backdrop] { recentsRaw.split(separator: ",").compactMap { Backdrop(rawValue: String($0)) } }
 
     var body: some View {
-        Chips(options: Source.allCases, selection: Binding { source } set: { source = $0 }, label: \.rawValue, hint: { "Backgrounds: \($0.rawValue)" })
+        Segments(options: Source.allCases, selection: Binding { source } set: { source = $0 }, label: \.rawValue, hint: { "Backgrounds: \($0.rawValue)" })
         switch source {
         case .library: library
         case .magic: magic
@@ -393,7 +392,7 @@ private struct FillPane: View {
         }
         .font(.system(size: 12.5))
         .padding(.horizontal, 9).padding(.vertical, 7)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        .background(.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
         HStack(spacing: 6) {
             ForEach([HueFamily?.none] + HueFamily.allCases.map(Optional.some), id: \.self) { h in
                 Button { hue = h } label: {
@@ -405,7 +404,7 @@ private struct FillPane: View {
                 .help(h?.rawValue ?? "All colours")
             }
             Spacer()
-            Chips(options: [Bool?.none, true, false], selection: $mood, label: { $0 == nil ? "All" : $0! ? "Light" : "Dark" }, hint: { _ in "Light or dark" })
+            Segments(options: [Bool?.none, true, false], selection: $mood, label: { $0 == nil ? "All" : $0! ? "Light" : "Dark" }, hint: { _ in "Light or dark" })
                 .frame(width: 140)
         }
         let filtering = !query.isEmpty || hue != nil || mood != nil
@@ -484,7 +483,7 @@ private struct FillPane: View {
     }
 
     @ViewBuilder private var gradient: some View {
-        Chips(options: GradientKind.allCases, selection: Binding { s.style.gradient.kind } set: { s.style.gradient.kind = $0; s.style.fill = .custom },
+        Segments(options: GradientKind.allCases, selection: Binding { s.style.gradient.kind } set: { s.style.gradient.kind = $0; s.style.fill = .custom },
               label: \.rawValue, hint: { "\($0.rawValue) gradient" })
         s.style.gradient.view.frame(height: 90).clipShape(RoundedRectangle(cornerRadius: 10))
         HStack(spacing: 10) {
@@ -529,7 +528,7 @@ private struct FillPane: View {
                     AnyView(Image(nsImage: i).resizable().scaledToFill())
                 } else {
                     AnyView(Image(systemName: "photo.badge.plus").font(.system(size: 18)).foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity).background(.white.opacity(0.06)))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity).background(.primary.opacity(0.06)))
                 }
             }
             .dropDestination(for: URL.self) { urls, _ in
@@ -662,7 +661,7 @@ private struct Tiles<Option: Hashable, Icon: View>: View {
                     }
                     .frame(maxWidth: .infinity, minHeight: 54)
                     .foregroundStyle(on ? .primary : .secondary)
-                    .background(.white.opacity(on ? 0.12 : 0.05), in: RoundedRectangle(cornerRadius: 10))
+                    .background(.primary.opacity(on ? 0.12 : 0.05), in: RoundedRectangle(cornerRadius: 10))
                     .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(on ? Color.mark : .clear, lineWidth: 1.5))
                     .contentShape(Rectangle())
                 }
@@ -692,7 +691,7 @@ private struct SizeTile: View {
             }
             .frame(maxWidth: .infinity, minHeight: 64)
             .foregroundStyle(on ? .primary : .secondary)
-            .background(.white.opacity(on ? 0.12 : 0.05), in: RoundedRectangle(cornerRadius: 10))
+            .background(.primary.opacity(on ? 0.12 : 0.05), in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(on ? Color.mark : .clear, lineWidth: 1.5))
             .contentShape(Rectangle())
         }
@@ -707,13 +706,13 @@ private struct PlacementGrid: View {
         LazyVGrid(columns: Array(repeating: GridItem(.fixed(18), spacing: 3), count: 3), spacing: 3) {
             ForEach(Placement.allCases) { p in
                 Button { selection = p } label: {
-                    RoundedRectangle(cornerRadius: 4).fill(selection == p ? Color.mark : .white.opacity(0.14)).frame(width: 18, height: 14)
+                    RoundedRectangle(cornerRadius: 4).fill(selection == p ? Color.mark : .primary.opacity(0.14)).frame(width: 18, height: 14)
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(5)
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 9))
+        .background(.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 9))
         .frame(width: 72)
     }
 }
@@ -726,7 +725,7 @@ private struct NumberField: View {
             .textFieldStyle(.plain)
             .font(.system(size: 12.5, design: .monospaced))
             .padding(.horizontal, 8).padding(.vertical, 6)
-            .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
+            .background(.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
     }
 }
 

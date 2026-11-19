@@ -242,17 +242,22 @@ struct AnnotationTests {
         #expect(image.width == 600 && image.height == 400)
     }
 
-    @Test func backgroundModeLocksTheSelectionAndAnnotations() {
+    @Test func backgroundModeLocksTheSelectionButKeepsDrawing() {
         s.style.enabled = true
         for tool in [nil] + Tool.allCases {
             s.tool = tool
-            s.drag(pt(200, 200), pt(400, 300))                 // inside: no move, no drawing
-            s.tap(pt(300, 300))                                // no step, no label
             s.drag(pt(700, 500), pt(800, 600))                 // a handle: no resize
             s.drag(pt(900, 700), pt(1000, 800))                // outside: no new selection
-            #expect(s.annotations.isEmpty && s.editingText == nil, "\(String(describing: tool))")
+            s.drag(pt(200, 200), pt(400, 300))                 // inside with no tool: no move
             #expect(s.selection == Self.selection, "\(String(describing: tool))")
         }
+        s.annotations = []
+        s.tool = nil
+        s.drag(pt(200, 200), pt(400, 300))
+        #expect(s.annotations.isEmpty)
+        s.tool = .arrow
+        s.drag(pt(200, 200), pt(400, 300))                     // tools still draw on the shot
+        #expect(s.annotations.count == 1)
     }
 
     @Test func yellowLabelsUseDarkText() {

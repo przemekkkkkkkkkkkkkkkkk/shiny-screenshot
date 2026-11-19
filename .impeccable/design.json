@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-19T00:00:00Z",
+  "title": "Design System: Shiny Screenshot",
+  "extensions": {
+    "colorMeta": {
+      "marker-yellow": { "role": "primary", "displayName": "Marker Yellow", "canonical": "#FFD60A", "tonalRamp": ["#3D3100", "#5E4C00", "#8A6F00", "#B89400", "#E6B800", "#FFD60A", "#FFE680", "#FFF6CC"] },
+      "marker-light": { "role": "primary", "displayName": "Marker Light", "canonical": "#FFE14D", "tonalRamp": ["#3D3300", "#5E4F00", "#8A7400", "#B89B00", "#E6C21A", "#FFE14D", "#FFEC99", "#FFF8D9"] },
+      "marker-deep": { "role": "primary", "displayName": "Marker Deep", "canonical": "#F5C400", "tonalRamp": ["#382C00", "#574400", "#806300", "#A88300", "#D1A300", "#F5C400", "#FFDD66", "#FFF2C2"] },
+      "marker-wash": { "role": "primary", "displayName": "Marker Wash", "canonical": "rgba(255,214,10,0.28)" },
+      "ink-on-marker": { "role": "neutral", "displayName": "Ink on Marker", "canonical": "#000000" },
+      "screen-scrim": { "role": "neutral", "displayName": "Screen Scrim", "canonical": "rgba(0,0,0,0.3)" },
+      "rim-light": { "role": "neutral", "displayName": "Lit Rim", "canonical": "linear-gradient(white 60%, white 4%, white 22%), plus-lighter" },
+      "well-fill": { "role": "neutral", "displayName": "Well Fill", "canonical": "label colour at 5%; white 5% in dark appearance" },
+      "track-fill": { "role": "neutral", "displayName": "Tab Track", "canonical": "label colour at 6%; white 6% in dark appearance" },
+      "hover-fill": { "role": "neutral", "displayName": "Hover Fill", "canonical": "label colour at 7%; white 7% in dark appearance" },
+      "selected-fill": { "role": "neutral", "displayName": "Selected Fill", "canonical": "label colour at 10%; white 10% in dark appearance" },
+      "annotate-red": { "role": "tertiary", "displayName": "Ink Red", "canonical": "#FF3B30" },
+      "annotate-orange": { "role": "tertiary", "displayName": "Ink Orange", "canonical": "#FF9F0A" },
+      "annotate-green": { "role": "tertiary", "displayName": "Ink Green", "canonical": "#34C759" },
+      "annotate-blue": { "role": "tertiary", "displayName": "Ink Blue", "canonical": "#0A84FF" },
+      "annotate-purple": { "role": "tertiary", "displayName": "Ink Purple", "canonical": "#BF5AF2" }
+    },
+    "typographyMeta": {
+      "panel-title": { "displayName": "Panel Title", "purpose": "Inspector heading." },
+      "control-label": { "displayName": "Control Label", "purpose": "Titled dock buttons, with a 17pt medium symbol." },
+      "primary-label": { "displayName": "Primary Label", "purpose": "Yellow primary buttons, with a 15pt semibold symbol." },
+      "hint": { "displayName": "Hint", "purpose": "Instruction pills." },
+      "body": { "displayName": "Body", "purpose": "Slider labels, fields, scrolling bar." },
+      "secondary": { "displayName": "Secondary", "purpose": "Backdrop name, Font row; secondary colour." },
+      "well-title": { "displayName": "Well Title", "purpose": "Group titles in the inspector; secondary colour." },
+      "tab": { "displayName": "Tab", "purpose": "Gallery group tabs; 600 when selected." },
+      "caption": { "displayName": "Caption", "purpose": "Tile names and gallery section labels." },
+      "value-badge": { "displayName": "Value Badge", "purpose": "Slider readouts and keycaps; tabular digits." },
+      "measurement": { "displayName": "Measurement", "purpose": "Selection size and loupe coordinates only." }
+    },
+    "shadows": [
+      { "name": "dock-lift", "value": "0 10px 36px rgba(0,0,0,0.22)", "purpose": "Lifts the dock off the user's screen (SwiftUI radius 18, y 10)." },
+      { "name": "panel-lift", "value": "0 12px 48px rgba(0,0,0,0.22)", "purpose": "Lifts the Background inspector (radius 24, y 12)." },
+      { "name": "yellow-glow", "value": "0 2px 18px rgba(255,214,10,0.5)", "purpose": "Halo under any lit control (radius 9, y 2)." },
+      { "name": "selection-glow", "value": "0 0 10px rgba(255,214,10,0.6)", "purpose": "Around the selection outline (radius 5)." },
+      { "name": "tab-lift", "value": "0 1px 6px rgba(0,0,0,0.12)", "purpose": "The sliding gallery tab pill (radius 3, y 1)." }
+    ],
+    "motion": [
+      { "name": "spring-appear", "value": "spring(response: 0.38, dampingFraction: 0.82)", "purpose": "Toolbar and pills appearing on phase change; scale from 0.92 plus fade." },
+      { "name": "spring-puck", "value": "spring(response: 0.32, dampingFraction: 0.78)", "purpose": "The yellow puck sliding to the active tool." },
+      { "name": "spring-palette", "value": "spring(response: 0.34, dampingFraction: 0.8)", "purpose": "Colour island opening and closing." },
+      { "name": "spring-panel", "value": "spring(response: 0.4, dampingFraction: 0.85)", "purpose": "Background toggle; inspector slides in from the trailing edge." },
+      { "name": "spring-select", "value": "spring(response: 0.3, dampingFraction: 0.75)", "purpose": "Gallery tile selection, scale 0.97 to 1." },
+      { "name": "spring-tab", "value": "spring(response: 0.3, dampingFraction: 0.8)", "purpose": "Sliding gallery tab pill." },
+      { "name": "spring-hover", "value": "spring(response: 0.25, dampingFraction: 0.7)", "purpose": "Primary button hover scale to 1.03." }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one solid yellow action (Copy, Start), with its glow and keycap.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"><rect x=\"5\" y=\"5\" width=\"8\" height=\"9\" rx=\"1.5\"/><path d=\"M3 11V3.5A1.5 1.5 0 0 1 4.5 2H10\"/></svg>Copy<span class=\"ds-keycap\">&#8617;</span></button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 8px; height: 50px; padding: 0 10px 0 18px; border: none; border-radius: 9999px; background: linear-gradient(#FFE14D, #FFD60A, #F5C400); color: #000; font: 600 14px -apple-system, system-ui, sans-serif; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.55), 0 2px 18px rgba(255,214,10,0.5); cursor: pointer; transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1); } .ds-btn-primary:hover { transform: scale(1.03); } .ds-btn-primary:focus-visible { outline: 3px solid rgba(255,214,10,0.6); outline-offset: 3px; } .ds-keycap { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; background: rgba(0,0,0,0.12); font: 700 11px ui-rounded, system-ui; }"
+    },
+    {
+      "name": "Dock Island",
+      "kind": "nav",
+      "refersTo": "dock-island",
+      "description": "A glass capsule of 40pt tools with the sliding yellow puck under the active one.",
+      "html": "<div class=\"ds-island\"><button class=\"ds-dock-btn ds-on\" aria-pressed=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\"><path d=\"M4 14L14 4M7 4h7v7\"/></svg></button><button class=\"ds-dock-btn\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"><rect x=\"3\" y=\"5\" width=\"12\" height=\"8\" rx=\"1.5\"/></svg></button><button class=\"ds-dock-btn\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"><circle cx=\"9\" cy=\"9\" r=\"6\"/><path d=\"M9 6v6\"/></svg></button></div>",
+      "css": ".ds-island { display: inline-flex; gap: 2px; padding: 5px; border-radius: 9999px; background: rgba(255,255,255,0.55); backdrop-filter: blur(24px) saturate(1.6); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(255,255,255,0.22), 0 10px 36px rgba(0,0,0,0.22); } .ds-dock-btn { width: 40px; height: 40px; display: grid; place-items: center; border: none; border-radius: 9999px; background: transparent; color: #1d1d1f; cursor: pointer; transition: background 0.2s; } .ds-dock-btn:hover { background: rgba(0,0,0,0.07); } .ds-dock-btn:focus-visible { outline: 2px solid #FFD60A; outline-offset: 1px; } .ds-dock-btn.ds-on { background: linear-gradient(#FFE14D, #FFD60A); color: #000; box-shadow: 0 2px 18px rgba(255,214,10,0.5); } @media (prefers-color-scheme: dark) { .ds-island { background: rgba(40,40,44,0.55); } .ds-dock-btn { color: #f5f5f7; } .ds-dock-btn:hover { background: rgba(255,255,255,0.07); } }"
+    },
+    {
+      "name": "Toggle Dock Button",
+      "kind": "button",
+      "refersTo": "dock-button-toggle-on",
+      "description": "A titled toggle (Background) lit with a yellow wash and rim; text stays primary colour.",
+      "html": "<button class=\"ds-toggle\" aria-pressed=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 18 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"><rect x=\"2\" y=\"5\" width=\"11\" height=\"9\" rx=\"2\"/><path d=\"M5 3h9a2 2 0 0 1 2 2v7\"/></svg>Background</button>",
+      "css": ".ds-toggle { display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 14px; border: none; border-radius: 9999px; background: transparent; color: #1d1d1f; font: 600 13.5px -apple-system, system-ui, sans-serif; cursor: pointer; } .ds-toggle:hover { background: rgba(0,0,0,0.07); } .ds-toggle[aria-pressed=\"true\"] { background: rgba(255,214,10,0.28); box-shadow: inset 0 0 0 1.5px #FFD60A; } .ds-toggle:focus-visible { outline: 2px solid #FFD60A; outline-offset: 2px; } @media (prefers-color-scheme: dark) { .ds-toggle { color: #f5f5f7; } }"
+    },
+    {
+      "name": "Hint Pill",
+      "kind": "chip",
+      "refersTo": "hint-pill",
+      "description": "A 40pt glass capsule with a yellow glyph that tells the user what to do next.",
+      "html": "<div class=\"ds-hint\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"#FFD60A\" stroke-width=\"1.8\"><path d=\"M2 5V2h3M11 2h3v3M14 11v3h-3M5 14H2v-3\"/></svg>Drag to select an area, or click a window. Esc cancels.</div>",
+      "css": ".ds-hint { display: inline-flex; align-items: center; gap: 9px; height: 40px; padding: 0 18px; border-radius: 9999px; background: rgba(255,255,255,0.55); backdrop-filter: blur(24px) saturate(1.6); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); color: #1d1d1f; font: 500 13.5px -apple-system, system-ui, sans-serif; } @media (prefers-color-scheme: dark) { .ds-hint { background: rgba(40,40,44,0.55); color: #f5f5f7; } }"
+    },
+    {
+      "name": "Size Pill",
+      "kind": "chip",
+      "refersTo": "size-pill",
+      "description": "Selection dimensions in SF Mono with a glowing yellow dot.",
+      "html": "<div class=\"ds-size\"><span class=\"ds-dot\"></span><b>1400 × 820</b><small>px</small></div>",
+      "css": ".ds-size { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 9999px; background: rgba(255,255,255,0.55); backdrop-filter: blur(24px); color: #1d1d1f; } .ds-size b { font: 600 12px ui-monospace, 'SF Mono', Menlo, monospace; } .ds-size small { font: 500 10.5px -apple-system, system-ui; opacity: 0.55; } .ds-dot { width: 7px; height: 7px; border-radius: 50%; background: #FFD60A; box-shadow: 0 1px 9px rgba(255,214,10,0.5); } @media (prefers-color-scheme: dark) { .ds-size { background: rgba(40,40,44,0.55); color: #f5f5f7; } }"
+    },
+    {
+      "name": "Well with Slider",
+      "kind": "card",
+      "refersTo": "well",
+      "description": "A grouped inset section on the inspector glass, holding yellow-tinted sliders with rounded value badges.",
+      "html": "<div class=\"ds-well\"><div class=\"ds-well-title\">Size</div><label class=\"ds-slider\"><span>Padding</span><input type=\"range\" min=\"0\" max=\"160\" value=\"64\"><output>64</output></label></div>",
+      "css": ".ds-well { width: 272px; padding: 12px; border-radius: 18px; background: rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px; color: #1d1d1f; } .ds-well-title { font: 600 12px -apple-system, system-ui; opacity: 0.55; } .ds-slider { display: flex; align-items: center; gap: 8px; font: 400 12.5px -apple-system, system-ui; } .ds-slider span { width: 58px; } .ds-slider input { flex: 1; accent-color: #FFD60A; } .ds-slider input:focus-visible { outline: 2px solid #FFD60A; } .ds-slider output { min-width: 34px; padding: 3px 0; text-align: center; border-radius: 9999px; background: rgba(0,0,0,0.07); font: 600 11px ui-rounded, system-ui; font-variant-numeric: tabular-nums; } @media (prefers-color-scheme: dark) { .ds-well { background: rgba(255,255,255,0.05); color: #f5f5f7; } .ds-slider output { background: rgba(255,255,255,0.07); } }"
+    },
+    {
+      "name": "Gallery Tabs",
+      "kind": "nav",
+      "refersTo": "gallery-tab-track",
+      "description": "Capsule track with a sliding tab pill that jumps the background gallery to a group.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab ds-on\" role=\"tab\" aria-selected=\"true\">Wallpapers</button><button class=\"ds-tab\" role=\"tab\">Mesh</button><button class=\"ds-tab\" role=\"tab\">Gradients</button><button class=\"ds-tab\" role=\"tab\">Glow</button><button class=\"ds-tab\" role=\"tab\">Solid</button></div>",
+      "css": ".ds-tabs { display: flex; gap: 1px; padding: 3px; width: 272px; border-radius: 9999px; background: rgba(0,0,0,0.06); } .ds-tab { flex: 1; min-height: 28px; border: none; border-radius: 9999px; background: transparent; color: rgba(0,0,0,0.5); font: 500 11.5px -apple-system, system-ui; cursor: pointer; transition: background 0.3s, color 0.3s; } .ds-tab:hover { color: #1d1d1f; } .ds-tab:focus-visible { outline: 2px solid #FFD60A; } .ds-tab.ds-on { background: rgba(255,255,255,0.75); color: #1d1d1f; font-weight: 600; box-shadow: 0 1px 6px rgba(0,0,0,0.12); } @media (prefers-color-scheme: dark) { .ds-tabs { background: rgba(255,255,255,0.06); } .ds-tab { color: rgba(255,255,255,0.55); } .ds-tab.ds-on { background: rgba(30,30,30,0.75); color: #f5f5f7; } }"
+    },
+    {
+      "name": "Background Tile",
+      "kind": "custom",
+      "refersTo": "ratio-tile-selected",
+      "description": "A 44pt gallery swatch on 12pt; selected gets a yellow ring on 15pt, a check and the glow.",
+      "html": "<button class=\"ds-tile ds-on\" aria-pressed=\"true\"><span class=\"ds-swatch\"></span></button><button class=\"ds-tile\"><span class=\"ds-swatch ds-swatch-b\"></span></button>",
+      "css": ".ds-tile { width: 66px; padding: 3px; border: 2px solid transparent; border-radius: 15px; background: none; cursor: pointer; transform: scale(0.97); transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); } .ds-tile.ds-on { border-color: #FFD60A; transform: scale(1); box-shadow: 0 2px 18px rgba(255,214,10,0.5); } .ds-tile:focus-visible { outline: 2px solid #FFD60A; outline-offset: 2px; } .ds-swatch { display: block; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #FDE68A, #F9A8D4, #F472B6); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12); } .ds-swatch-b { background: linear-gradient(135deg, #38BDF8, #818CF8); }"
+    },
+    {
+      "name": "Corner Card",
+      "kind": "card",
+      "refersTo": "corner-card",
+      "description": "Post-capture glass card: the shot leads at 20pt inside a 28pt card, with a 36pt action row.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-shot\"></div><div class=\"ds-row\"><button class=\"ds-card-copy\">Copy</button><button class=\"ds-card-icon\" aria-label=\"Save\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"><path d=\"M8 2v8M5 7l3 3 3-3M3 13h10\"/></svg></button><button class=\"ds-card-icon\" aria-label=\"Pin\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"><path d=\"M5 2h6M6 2v5l-2 3h8l-2-3V2M8 10v4\"/></svg></button></div></div>",
+      "css": ".ds-card { width: 300px; padding: 8px; border-radius: 28px; background: rgba(255,255,255,0.55); backdrop-filter: blur(24px) saturate(1.6); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 12px 48px rgba(0,0,0,0.22); display: flex; flex-direction: column; gap: 8px; } .ds-shot { height: 200px; border-radius: 20px; background: linear-gradient(135deg, #38BDF8, #818CF8); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18); } .ds-row { display: flex; gap: 6px; height: 36px; } .ds-card-copy { flex: 1; border: none; border-radius: 9999px; background: linear-gradient(#FFE14D, #FFD60A, #F5C400); color: #000; font: 600 13px -apple-system, system-ui; box-shadow: 0 2px 18px rgba(255,214,10,0.5); cursor: pointer; } .ds-card-icon { width: 36px; border: none; border-radius: 9999px; background: rgba(255,255,255,0.5); color: #1d1d1f; display: grid; place-items: center; cursor: pointer; } .ds-card-icon:hover { background: rgba(0,0,0,0.08); } .ds-card-copy:focus-visible, .ds-card-icon:focus-visible { outline: 2px solid #FFD60A; outline-offset: 2px; } @media (prefers-color-scheme: dark) { .ds-card { background: rgba(40,40,44,0.55); } .ds-card-icon { background: rgba(255,255,255,0.1); color: #f5f5f7; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "One Glowing Control",
+    "overview": "The capture overlay is native macOS Liquid Glass floating over the user's own frozen screen, with one glowing yellow control. It is generous and crafted rather than small: 40pt dock controls, a 50pt Copy button, a 300pt inspector with grouped wells, glass with a lit rim that catches light along its top edge. The screen, scrimmed at black 30%, is the backdrop; the bright rectangle the user dragged is the stage, framed in yellow crop marks.\n\nAppearance follows the system. Glass is regular Liquid Glass on macOS 26 and later (`.regularMaterial` with a faint hairline before that), so the chrome is light on a light Mac and dark on a dark one; nothing is forced dark. Marker Yellow is the only accent colour in the chrome, and it is always lit: a gradient on the primary action, a soft yellow halo under whatever is on, a sliding yellow puck under the active tool, a yellow wash and rim on toggles. Everything else is glass, SF Symbols and system type.\n\nWhat the user exports is a separate, expressive layer (wallpapers, mesh and gradient backgrounds, padding, corners, shadow, headings). The chrome stays native so the output can be the thing that shines. The Library and Settings are plain native macOS windows: system accent, standard controls, system text styles, no overlay styling.\n\nThe user rejected forced-dark smoked grey glass and small, dense shapes; this system replaces both.",
+    "keyCharacteristics": [
+      "Native Liquid Glass with a lit rim, following the system appearance.",
+      "One accent, Marker Yellow, always lit (gradient, glow, puck, wash).",
+      "Generous targets: 40pt dock controls, 50pt Copy, 300pt inspector.",
+      "Concentric radii from the 30pt panel down to 12pt tiles; capsules everywhere else.",
+      "Spring motion: the puck slides, the tab pill slides, the toolbar springs in.",
+      "Library and Settings are plain native windows."
+    ],
+    "rules": [
+      { "name": "The One Lit Colour Rule", "body": "Marker Yellow is the only accent in the chrome. Other hues appear only as ink the user draws with, or as system status (the red recording dot, orange \"lost track\").", "section": "colors" },
+      { "name": "The Always Lit Rule", "body": "Yellow never sits flat: it carries a gradient, a halo (yellow at 50%, 9pt radius, 2pt down), or a rim. A flat yellow fill reads as a sticker, not a control.", "section": "colors" },
+      { "name": "The Solid Primary Rule", "body": "The primary action is a solid yellow gradient, never tinted glass, because glass tints grey out in a non-key overlay window.", "section": "colors" },
+      { "name": "The Mono Means Measured Rule", "body": "SF Mono appears only where the user reads pixels: the size pill and the loupe. Everything else is SF Pro or SF Pro Rounded.", "section": "typography" },
+      { "name": "The Generous Target Rule", "body": "Dock controls are 40pt, the dock primary is 50pt, card controls 36pt, the panel's shuffle button 36pt.", "section": "layout" },
+      { "name": "The Glow, Not Shadow Rule", "body": "An \"on\" control shows its state with a halo in its own colour, like a lit knob under glass. Dark drop shadows are only for lifting whole surfaces off the screen.", "section": "elevation" },
+      { "name": "The Concentric Rule", "body": "An inner radius is its container's radius minus the inset between them. Never put a sharper inner corner against a softer outer one at random.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do use `glassChrome` for every overlay surface, so it gets Liquid Glass and the lit rim on macOS 26+ and `.regularMaterial` before.",
+      "Do let the appearance follow the system.",
+      "Do mark \"on\" with Marker Yellow plus a glow, a puck, or a wash and rim.",
+      "Do keep dock controls at 40pt and the dock primary at 50pt.",
+      "Do nest radii concentrically: 30 panel, 28 card, 18 wells, 12 tiles, capsules elsewhere.",
+      "Do group neighbouring glass in one `GlassGroup` so it blends as one surface.",
+      "Do animate state with springs, and slide a shared indicator (`matchedGeometryEffect`) rather than cross-fading.",
+      "Do keep Library and Settings plain native windows."
+    ],
+    "donts": [
+      "Don't force the dark appearance or use smoked grey glass.",
+      "Don't shrink controls into dense, small instrument targets.",
+      "Don't introduce a second accent colour in the chrome; other hues are user ink or system status only.",
+      "Don't make the primary action tinted glass; it greys out in a non-key overlay.",
+      "Don't use SF Mono outside measurements.",
+      "Don't use dark drop shadows to show state; use the glow."
+    ]
+  }
+}
