@@ -1,22 +1,25 @@
 // Development-only renderer. Compile alongside Capture, Session, Geometry, Drawing and OverlayView.
-// Run in a temporary app bundle containing the built Assets.car; no screen capture is performed.
+// Run in a temporary app bundle containing the built Assets.car. Views are captured from an on-screen window
+// (Liquid Glass needs one), so the terminal needs Screen Recording permission.
 import AppKit
 import SwiftUI
 
-enum OverlayAction { case copy, save, pin, cancel }
+enum OverlayAction { case copy, save, pin, scroll, cancel }
+enum CaptureMode: String, Codable { case area, window, again, fullScreen, scrolling }
 enum Shot { static let folderName = "Desktop" }
 
 @main
 struct AssetPreviews {
     @MainActor static func main() throws {
         _ = NSApplication.shared
+        NSApp.appearance = NSAppearance(named: .aqua)
         let root = URL(filePath: CommandLine.arguments[1])
         let out = root.appending(path: "assets/previews")
         let file = out.appending(path: "sample-screen.png")
         let source = NSImage(contentsOf: file)!
         var rect = CGRect(origin: .zero, size: source.size)
         let image = source.cgImage(forProposedRect: &rect, context: nil, hints: nil)!
-        let session = Session(Capture.Frozen(image: image, pixelated: image, scale: 2,
+        let session = Session(Capture.Frozen(image: image, scale: 2,
                                             size: CGSize(width: 1000, height: 680), windows: []), displayID: 0)
         session.selection = CGRect(x: 150, y: 135, width: 700, height: 410)
         session.phase = .editing
@@ -52,17 +55,22 @@ struct AssetPreviews {
     }
 
     @MainActor static func save<V: View>(_ view: V, to url: URL) throws {
-        // AppKit-backed controls (the segmented picker) need a native view snapshot.
+        // Liquid Glass samples what is behind it, so the view goes in a real on-screen window and the window is
+        // captured (the terminal running this needs Screen Recording permission).
         let host = NSHostingView(rootView: view)
         host.frame = CGRect(x: 0, y: 0, width: 1000, height: 680)
         let window = NSWindow(contentRect: host.frame, styleMask: .borderless, backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.contentView = host
-        host.layoutSubtreeIfNeeded()
-        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.15))
-        let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds)!
-        host.cacheDisplay(in: host.bounds, to: rep)
-        try write(rep.cgImage!, to: url)
+        window.level = .floating
+        window.setFrameOrigin(CGPoint(x: 40, y: 80))
+        window.orderFrontRegardless()
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 1.2))
+        let capture = Process()
+        capture.executableURL = URL(filePath: "/usr/sbin/screencapture")
+        capture.arguments = ["-x", "-o", "-l", "\(window.windowNumber)", url.path]
+        try capture.run()
+        capture.waitUntilExit()
         window.close()
     }
 

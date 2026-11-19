@@ -121,7 +121,7 @@ struct ViewTests {
         let xs = (0..<rep.pixelsWide).filter { rep.colorAt(x: $0, y: y) != background }
         let width = CGFloat((xs.last ?? 0) - (xs.first ?? 0) + 1) / k
         print("MEASURE toolbar width \(width) pt (toolbarCenter assumes 772)")
-        #expect(width <= 2 * BackgroundTests.toolbarHalfWidth, "toolbar is \(width) pt")
+        #expect(width <= 2 * s.toolbarHalfWidth, "toolbar is \(width) pt")
         #expect(width > 600, "toolbar not found in the snapshot")
     }
 

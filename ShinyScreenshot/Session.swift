@@ -206,16 +206,20 @@ final class Session {
 
     private func beginDrag(at p: CGPoint) -> Drag? {
         if phase == .selecting { return windowsOnly ? nil : .create(previous: .zero, phase: .selecting) }
-        if style.enabled { return nil }
-        // Handle hit areas shrink with the selection so small selections can still be moved and drawn in.
-        let reach = min(10, min(selection.width, selection.height) / 4)
-        if let h = Handle.allCases.min(by: { handlePoint($0, of: selection).distance(to: p) < handlePoint($1, of: selection).distance(to: p) }),
-           handlePoint(h, of: selection).distance(to: p) < reach {
-            return .resize(h, selection)
+        // With a background on, the preview is for drawing only: no handles, no moving or reselecting.
+        if style.enabled {
+            guard selection.contains(p) else { return nil }
+        } else {
+            // Handle hit areas shrink with the selection so small selections can still be moved and drawn in.
+            let reach = min(10, min(selection.width, selection.height) / 4)
+            if let h = Handle.allCases.min(by: { handlePoint($0, of: selection).distance(to: p) < handlePoint($1, of: selection).distance(to: p) }),
+               handlePoint(h, of: selection).distance(to: p) < reach {
+                return .resize(h, selection)
+            }
+            guard selection.contains(p) else { return .create(previous: selection, phase: phase) }
         }
-        guard selection.contains(p) else { return .create(previous: selection, phase: phase) }
         if let l = label(at: p) { return .moveLabel(l.id, l.points[0]) }
-        guard let tool else { return .move(selection) }
+        guard let tool else { return style.enabled ? nil : .move(selection) }
         if tool.placesOnClick { return nil }
         let a = Annotation(tool: tool, color: color, points: [p, p])
         annotations.append(a)
@@ -231,7 +235,7 @@ final class Session {
             }
             return
         }
-        guard !style.enabled, selection.contains(p) else { return }
+        guard selection.contains(p) else { return }
         if let l = label(at: p) { return edit(l) }
         guard let tool, tool.placesOnClick else { return }
         var a = Annotation(tool: tool, color: color, points: [p], size: labelSize, filled: labelFilled)
@@ -277,6 +281,20 @@ final class Session {
             annotations.removeAll { $0.id == id }
         } else if let i = annotations.firstIndex(where: { $0.id == id }) {
             annotations[i].text = text
+        }
+    }
+
+    /// Esc with markup on screen asks twice, so one Esc too many doesn't throw the work away.
+    var discardArmed = false
+    @ObservationIgnored private var disarming: Task<Void, Never>?
+
+    func armDiscard() {
+        discardArmed = true
+        disarming?.cancel()
+        disarming = Task {
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
+            discardArmed = false
         }
     }
 
@@ -361,6 +379,29 @@ final class Session {
         return renderer.cgImage
     }
 
+    /// Screen point on the background preview -> the same spot on the frozen screen, where annotations live.
+    func fromPreview(_ p: CGPoint) -> CGPoint {
+        guard style.enabled, phase == .editing else { return p }
+        let f = previewFrame, k = f.width / canvas.width, o = shotOrigin
+        return CGPoint(x: selection.minX + (p.x - f.minX) / k - o.x, y: selection.minY + (p.y - f.minY) / k - o.y)
+    }
+
+    /// The inverse of `fromPreview`, and the preview's scale: where a label being typed shows, and how big.
+    func onPreview(_ q: CGPoint) -> (point: CGPoint, scale: CGFloat) {
+        guard style.enabled else { return (q, 1) }
+        let f = previewFrame, k = f.width / canvas.width, o = shotOrigin
+        return (CGPoint(x: f.minX + (q.x - selection.minX + o.x) * k, y: f.minY + (q.y - selection.minY + o.y) * k), k)
+    }
+
+    /// Screens too narrow for the toolbar beside the background panel: it docks at the bottom, under a shorter panel.
+    var toolbarDocked: Bool { style.enabled && size.width - panelReserve < 2 * toolbarHalfWidth }
+    /// Narrow screens get the compact toolbar: Background and Copy lose their labels.
+    var compactToolbar: Bool { size.width < 900 }
+    /// Half the toolbar's measured width, glow and shadow included.
+    var toolbarHalfWidth: CGFloat { compactToolbar ? 360 : 432 }
+    /// The background panel's width plus its margin from the screen edge.
+    private let panelReserve: CGFloat = 320
+
     /// Where the background preview sits on screen: on the selection, scaled down to leave room for the panel.
     var previewFrame: CGRect {
         let c = canvas
@@ -374,13 +415,13 @@ final class Session {
     /// Below the target if there is room, else above it (clear of the notch), else inside its bottom edge.
     /// On screens too narrow to fit it beside the background panel, it docks at the bottom instead.
     func toolbarCenter(around r: CGRect) -> CGPoint {
-        let half: CGFloat = 386
-        if style.enabled && size.width - 300 < 2 * half {
-            return CGPoint(x: max(size.width / 2, min(half, size.width - half)), y: size.height - 34)
+        let half = toolbarHalfWidth
+        if toolbarDocked {
+            return CGPoint(x: max(size.width / 2, min(half, size.width - half)), y: size.height - 42)
         }
-        let right = style.enabled ? size.width - 300 : size.width
+        let right = style.enabled ? size.width - panelReserve : size.width
         let top = screen?.safeAreaInsets.top ?? 0
-        let y = r.maxY + 60 < size.height ? r.maxY + 34 : (r.minY - 60 > top ? r.minY - 34 : r.maxY - 34)
+        let y = r.maxY + 76 < size.height ? r.maxY + 42 : (r.minY - 76 > top ? r.minY - 42 : r.maxY - 42)
         return CGPoint(x: min(max(r.midX, half), right - half), y: y)
     }
 }
