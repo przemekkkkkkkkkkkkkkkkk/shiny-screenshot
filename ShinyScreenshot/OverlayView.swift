@@ -731,7 +731,7 @@ private struct ColorRow: View {
             fill()
                 .frame(width: 18, height: 18)
                 .padding(2)
-                .overlay(Circle().strokeBorder(selection == hex ? Color.accentColor : .clear, lineWidth: 2))
+                .overlay(Circle().strokeBorder(selection == hex ? Color.mark : .clear, lineWidth: 2))
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
