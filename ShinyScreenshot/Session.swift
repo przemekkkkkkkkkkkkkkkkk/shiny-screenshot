@@ -118,6 +118,7 @@ final class Session {
     private(set) var redactions: [CGRect] = []
     @ObservationIgnored private var redactedSelection: CGRect?
     @ObservationIgnored private var magicCache: (CGRect, [Int])?
+    @ObservationIgnored private var balanceCache: (CGRect, CGRect)?
 
     /// `create` remembers what to restore if the new selection ends up too small.
     private enum Drag {
@@ -293,11 +294,29 @@ final class Session {
         if annotations.popLast()?.id == editingText { editingText = nil }
     }
 
+    /// The part of the screen that is exported: the selection, or with auto balance, the selection trimmed so the
+    /// plain margin around its content is the same on every side (after CleanShot X).
+    var shotArea: CGRect {
+        guard style.enabled, style.autoBalance else { return selection }
+        if let (r, a) = balanceCache, r == selection { return a }
+        let px = CGRect(x: selection.minX * scale, y: selection.minY * scale, width: selection.width * scale, height: selection.height * scale)
+        var area = selection
+        if let crop = image.cropping(to: px.integral), let m = plainMargins(crop) {
+            let even = min(m.top, m.left, m.bottom, m.right)
+            area = pixelAligned(CGRect(x: selection.minX + CGFloat(m.left - even) / scale, y: selection.minY + CGFloat(m.top - even) / scale,
+                                       width: selection.width - CGFloat(m.left + m.right - 2 * even) / scale,
+                                       height: selection.height - CGFloat(m.top + m.bottom - 2 * even) / scale), scale: scale)
+        }
+        balanceCache = (selection, area)
+        return area
+    }
+
     /// The shot with its window frame and ring, before padding.
     var boxSize: CGSize {
-        guard style.enabled else { return selection.size }
+        let a = shotArea.size
+        guard style.enabled else { return a }
         let c = style.frame.chrome, ring = style.ringWidth
-        return CGSize(width: selection.width + c.left + c.right + 2 * ring, height: selection.height + c.top + c.bottom + 2 * ring)
+        return CGSize(width: a.width + c.left + c.right + 2 * ring, height: a.height + c.top + c.bottom + 2 * ring)
     }
 
     /// Title and description, when the background is on and there is text to show.
@@ -322,12 +341,7 @@ final class Session {
         return CGSize(width: max(g.width, h.width), height: g.height + h.gap + h.height)
     }
 
-    /// Auto balance: the same room on every side, in proportion to the shot.
-    var effectivePadding: CGFloat {
-        guard style.autoBalance else { return style.padding }
-        let b = boxSize
-        return min(max((max(b.width, b.height) * 0.08).rounded(), 32), 120)
-    }
+    var effectivePadding: CGFloat { style.padding }
 
     /// How far the shot runs off the canvas edge, when it bleeds.
     private var bleedDepth: CGFloat {
@@ -336,7 +350,7 @@ final class Session {
 
     /// Size of the exported image, in whole device pixels.
     var canvas: CGSize {
-        guard style.enabled else { return snappedSize(selection.size) }
+        guard style.enabled else { return snappedSize(shotArea.size) }
         let p = effectivePadding, bleed = bleedDepth
         var c = canvasSize(shot: content, padding: p, ratio: nil)
         if bleed > 0 { c.height -= p + bleed }

@@ -114,14 +114,18 @@ enum Video {
         }
         guard let under = plate(.under), let over = plate(.over) else { throw CocoaError(.fileWriteUnknown) }
         // Where the shot goes, in video pixels with the origin at the bottom left.
-        let o = s.style.enabled ? s.shotOrigin : .zero, size = s.selection.size
+        let o = s.style.enabled ? s.shotOrigin : .zero, size = s.shotArea.size
+        let sel = s.selection, area = s.shotArea
         let sx = CGFloat(w) / canvas.width, sy = CGFloat(h) / canvas.height
         let hole = CGRect(x: o.x * sx, y: CGFloat(h) - (o.y + size.height) * sy, width: size.width * sx, height: size.height * sy)
         let mask = CIImage(cgImage: holeMask(w: w, h: h, hole: hole, radius: s.style.enabled ? s.style.radius * sx : 0,
                                              topSquare: [.mac, .macDark, .safari, .chrome, .windows].contains(s.style.frame)))
         let asset = AVURLAsset(url: source)
         let composition = try await AVMutableVideoComposition.videoComposition(with: asset) { request in
-            let src = request.sourceImage
+            // The recording covers the selection; auto balance may keep only part of it.
+            let full = request.sourceImage, kx = full.extent.width / sel.width, ky = full.extent.height / sel.height
+            let crop = CGRect(x: (area.minX - sel.minX) * kx, y: (sel.maxY - area.maxY) * ky, width: area.width * kx, height: area.height * ky)
+            let src = full.cropped(to: crop).transformed(by: CGAffineTransform(translationX: -crop.minX, y: -crop.minY))
             let placed = src.transformed(by: CGAffineTransform(scaleX: hole.width / src.extent.width, y: hole.height / src.extent.height))
                 .transformed(by: CGAffineTransform(translationX: hole.minX, y: hole.minY))
             let blended = placed.applyingFilter("CIBlendWithMask", parameters: [kCIInputBackgroundImageKey: under, kCIInputMaskImageKey: mask])
@@ -308,6 +312,8 @@ struct VideoCard: View {
     let job: VideoJob
     let poster: NSImage
     let title: String
+    @State var inLibrary: Bool
+    let library: () -> Void
     let close: () -> Void
 
     var body: some View {
@@ -334,6 +340,14 @@ struct VideoCard: View {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.writeObjects([url as NSURL])
                     }
+                    Button {
+                        inLibrary = true
+                        library()
+                    } label: {
+                        Image(systemName: inLibrary ? "checkmark" : "photo.stack")
+                    }
+                    .disabled(inLibrary)
+                    .help(inLibrary ? "In the Library" : "Save to Library")
                 }
                 .controlSize(.small)
             } else if !job.failed {

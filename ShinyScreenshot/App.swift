@@ -393,12 +393,17 @@ final class Shiny {
     private func makeVideo(_ s: Session, still: Bool, copy: Bool) {
         s.commitText()
         let job = VideoJob()
-        let poster = s.render().map { NSImage(cgImage: $0, size: s.canvas) } ?? NSImage()
+        // The styled first frame: the card's poster and the Library thumbnail.
+        let shot = Shot(s)
+        let poster = shot?.image ?? NSImage()
+        lastArea = (s.selection, s.style)
         let temp = FileManager.default.temporaryDirectory.appending(path: Bundle.main.bundleIdentifier ?? "ShinyScreenshot").appending(path: "Videos")
         try? FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
         let url = Video.newFile(in: copy ? temp : Shot.folder, prefix: still ? "Shiny Video" : "Shiny Recording")
         weak var panel: NSPanel?
-        let p = makePanel(VideoCard(job: job, poster: poster, title: copy ? "Video copied to clipboard" : "Saved to \(Shot.folderName)") { [weak self] in
+        let inLibrary = UserDefaults.standard.bool(forKey: "keepInLibrary") || Library.shared.contains(s.shotID)
+        let p = makePanel(VideoCard(job: job, poster: poster, title: copy ? "Video copied to clipboard" : "Saved to \(Shot.folderName)",
+                                    inLibrary: inLibrary, library: { if let shot, let url = job.url { Task { await Library.shared.add(shot, video: url) } } }) { [weak self] in
             if let panel { self?.close(panel) }
         })
         panel = p
@@ -412,6 +417,7 @@ final class Shiny {
                     try await Video.styled(s, to: url)
                 }
                 job.url = url
+                if inLibrary, let shot { await Library.shared.add(shot, video: url) }
                 if copy {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.writeObjects([url as NSURL])

@@ -65,6 +65,42 @@ struct LibraryTests {
     }
 }
 
+/// Videos in the Library: the poster as thumbnail, the MP4 beside it, and recordings reopen to be styled again.
+struct LibraryVideoTests {
+    @Test func recordingIsKeptAndReopensWithItsSource() async throws {
+        let dir = FileManager.default.temporaryDirectory.appending(path: "LibraryVideo-\(UUID())")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        // A short motion video stands in for both the recording and the finished export.
+        let still = Fixture.session(Fixture.coded(200, 150), scale: 1)
+        still.selection = CGRect(x: 0, y: 0, width: 200, height: 150)
+        still.phase = .editing
+        still.style.enabled = true
+        still.style.seconds = 0.2
+        let source = dir.appending(path: "rec.mp4"), finished = dir.appending(path: "out.mp4")
+        try await Video.motion(still, to: source) { _ in }
+        try FileManager.default.copyItem(at: source, to: finished)
+
+        let s = Fixture.session(Fixture.coded(200, 150), scale: 1)
+        s.selection = CGRect(x: 0, y: 0, width: 200, height: 150)
+        s.phase = .editing
+        s.video = source
+        s.mode = .recording
+        s.style.enabled = true
+        let lib = Library(folder: dir.appending(path: "lib"))
+        await lib.add(try #require(Shot(s)), video: finished)
+        let item = try #require(lib.items.first)
+        #expect(item.isVideo && item.kind == .recording)
+        #expect(lib.mediaURL(of: item).pathExtension == "mp4")
+        #expect(FileManager.default.fileExists(atPath: lib.mediaURL(of: item).path))
+        #expect(FileManager.default.fileExists(atPath: lib.url(of: item).path), "poster")
+        let again = try #require(lib.session(item, displayID: 1, fit: CGSize(width: 1000, height: 800)))
+        #expect(again.video?.lastPathComponent == "\(item.id.uuidString)-source.mp4")
+        lib.delete([item.id])
+        #expect(!FileManager.default.fileExists(atPath: lib.mediaURL(of: item).path))
+    }
+}
+
 /// Reopening a Library capture: the pixels, annotations and background come back, and copying again updates the entry.
 struct LibraryEditTests {
     @Test func reopenedCaptureRendersTheSameAndUpdatesItsEntry() async throws {

@@ -22,8 +22,11 @@ struct LibraryItem: Codable, Identifiable, Hashable {
     var updated: Date?
     /// Saved with its annotations, so it can be edited again.
     var editable: Bool?
+    /// A video: the PNG is its poster, the MP4 sits beside it.
+    var video: Bool?
 
     var file: String { "\(id.uuidString).png" }
+    var isVideo: Bool { video == true }
     var area: Int { width * height }
     var title: String { name ?? app ?? kind.title }
     var tagList: [String] { tags ?? [] }
@@ -124,18 +127,22 @@ final class Library {
     }
 
     func url(of item: LibraryItem) -> URL { folder.appending(path: item.file) }
+    /// The file to open, copy or drag: the MP4 for videos, else the PNG.
+    func mediaURL(of item: LibraryItem) -> URL { item.isVideo ? files(item.id).movie : url(of: item) }
     func contains(_ id: UUID) -> Bool { items.contains { $0.id == id } }
 
     /// The image, the whole frozen screen, the window on its own, and the markup.
-    private func files(_ id: UUID) -> (image: URL, screen: URL, window: URL, edit: URL) {
+    /// For videos also the finished MP4, and for recordings the recording as it came, so it can be styled again.
+    private func files(_ id: UUID) -> (image: URL, screen: URL, window: URL, edit: URL, movie: URL, source: URL) {
         let base = id.uuidString
         return (folder.appending(path: "\(base).png"), folder.appending(path: "\(base)-screen.png"),
-                folder.appending(path: "\(base)-window.png"), folder.appending(path: "\(base)-edit.json"))
+                folder.appending(path: "\(base)-window.png"), folder.appending(path: "\(base)-edit.json"),
+                folder.appending(path: "\(base).mp4"), folder.appending(path: "\(base)-source.mp4"))
     }
 
     /// Writes the files in the background; the item shows up once they are on disk.
     /// A shot already in the Library replaces its image and markup, keeping name, tags and star.
-    func add(_ shot: Shot) async {
+    func add(_ shot: Shot, video: URL? = nil) async {
         let existing = items.first { $0.id == shot.id }
         if existing != nil && shot.session == nil { return }
         var item = existing ?? LibraryItem(id: shot.id, date: shot.date, width: 0, height: 0, scale: shot.scale, kind: shot.kind, app: shot.app)
@@ -170,6 +177,18 @@ final class Library {
         }.value
         guard written || item.editable == true else { return }
         if !written { item.editable = false }
+        if let video {
+            // The recording as it came, kept once; the finished video replaces the last one.
+            let source = shot.session?.video
+            let ok = await Task.detached {
+                let fm = FileManager.default
+                if let source, source != f.source, !fm.fileExists(atPath: f.source.path) { try? fm.copyItem(at: source, to: f.source) }
+                try? fm.removeItem(at: f.movie)
+                return (try? fm.copyItem(at: video, to: f.movie)) != nil
+            }.value
+            guard ok else { return }
+            item.video = true
+        }
         if let i = items.firstIndex(where: { $0.id == item.id }) {
             item.favorite = items[i].favorite
             item.name = items[i].name
@@ -217,6 +236,9 @@ final class Library {
     }
 
     private func identify(_ s: Session, as item: LibraryItem) -> Session {
+        // A recording reopens to be styled again from the recording as it came.
+        let source = files(item.id).source
+        if item.isVideo, FileManager.default.fileExists(atPath: source.path) { s.video = source }
         s.mode = item.kind
         s.app = item.app
         s.shotID = item.id
@@ -295,7 +317,7 @@ final class Library {
     func delete(_ ids: Set<UUID>) {
         for id in ids {
             let f = files(id)
-            for url in [f.image, f.screen, f.window, f.edit] { try? FileManager.default.removeItem(at: url) }
+            for url in [f.image, f.screen, f.window, f.edit, f.movie, f.source] { try? FileManager.default.removeItem(at: url) }
         }
         items.removeAll { ids.contains($0.id) }
         saveIndex()
@@ -327,7 +349,7 @@ final class Library {
                 && (!q.favoritesOnly || i.favorite)
                 && (since.map { i.date >= $0 } ?? true)
                 && (q.tags.isEmpty || !q.tags.isDisjoint(with: i.tagList))
-                && (search.isEmpty || ([i.name ?? "", i.app ?? "", i.kind.title, i.backdrop ?? "", "\(i.width)×\(i.height)"] + i.tagList)
+                && (search.isEmpty || ([i.name ?? "", i.app ?? "", i.kind.title, i.backdrop ?? "", "\(i.width)×\(i.height)", i.isVideo ? "Video" : ""] + i.tagList)
                     .contains { $0.localizedStandardContains(search) })
         }
         let sorted = kept.sorted { a, b in
@@ -371,7 +393,7 @@ private func * (r: CGRect, k: CGFloat) -> CGRect { CGRect(origin: r.origin * k, 
 
 extension CaptureMode {
     /// What the Library records; capturing the last area again counts as an area.
-    static let kept: [CaptureMode] = [.area, .window, .fullScreen, .scrolling]
+    static let kept: [CaptureMode] = [.area, .window, .fullScreen, .scrolling, .recording]
 
     var title: String {
         switch self {
@@ -533,10 +555,10 @@ struct LibraryView: View {
     }
 
     private func cell(_ item: LibraryItem) -> some View {
-        let url = library.url(of: item)
+        let url = library.mediaURL(of: item)
         let selected = selection == item.id
         return VStack(alignment: .leading, spacing: 6) {
-            LibraryThumbnail(url: url, version: item.updated)
+            LibraryThumbnail(url: library.url(of: item), version: item.updated)
                 .frame(height: 130)
                 .frame(maxWidth: .infinity)
                 .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
@@ -549,6 +571,11 @@ struct LibraryView: View {
                     }
                     .buttonStyle(.plain)
                     .help(item.favorite ? "Remove from favourites" : "Add to favourites")
+                }
+                .overlay {
+                    if item.isVideo {
+                        Image(systemName: "play.circle.fill").font(.system(size: 30)).foregroundStyle(.white.opacity(0.9)).shadow(radius: 4)
+                    }
                 }
                 .onDrag { NSItemProvider(contentsOf: url) ?? NSItemProvider() }
             HStack(spacing: 4) {
@@ -581,9 +608,16 @@ struct LibraryView: View {
         .onTapGesture(count: 2) { NSWorkspace.shared.open(url) }
         .onTapGesture { selection = item.id }
         .contextMenu {
-            Button(item.editable == true ? "Edit Annotations" : "Mark Up") { Shiny.shared.edit(item) }
-            Button("Copy") { library.shot(item)?.copy() }
-            Button("Pin") { if let s = library.shot(item) { Shiny.shared.pin(s) } }
+            Button(item.isVideo ? "Edit Video" : item.editable == true ? "Edit Annotations" : "Mark Up") { Shiny.shared.edit(item) }
+            if item.isVideo {
+                Button("Copy") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.writeObjects([url as NSURL])
+                }
+            } else {
+                Button("Copy") { library.shot(item)?.copy() }
+                Button("Pin") { if let s = library.shot(item) { Shiny.shared.pin(s) } }
+            }
             Button("Open") { NSWorkspace.shared.open(url) }
             Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([url]) }
             Divider()

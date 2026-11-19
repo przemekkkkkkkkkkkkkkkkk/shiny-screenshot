@@ -111,7 +111,7 @@ struct FramedShot: View {
     var part = ComposedPart.all
 
     var body: some View {
-        let st = s.style, sel = s.selection.size, ring = st.ringWidth, ch = st.frame.chrome
+        let st = s.style, sel = s.shotArea.size, ring = st.ringWidth, ch = st.frame.chrome
         let frameRadius = st.frame.isDevice ? st.radius + max(ch.left, ch.top) : st.radius
         let content: AnyView = part == .under ? AnyView(Color.black) : AnyView(ShotView(s: s, drawsImage: part != .over))
         if part == .over {

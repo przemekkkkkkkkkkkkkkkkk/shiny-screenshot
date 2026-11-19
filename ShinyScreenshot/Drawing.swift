@@ -500,7 +500,7 @@ struct ShotView: View {
 
     var body: some View {
         // Read observed state here, not inside the Canvas closure, so changes redraw.
-        let sel = s.selection, annotations = s.annotations.filter { $0.id != s.editingText }
+        let sel = s.shotArea, annotations = s.annotations.filter { $0.id != s.editingText }
         let window = s.activeWindowShot, hidden = s.hiddenAreas
         let full = window?.frame ?? s.bounds
         let image = Image(decorative: window?.image ?? s.image, scale: s.scale)

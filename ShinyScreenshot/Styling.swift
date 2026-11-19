@@ -363,3 +363,33 @@ nonisolated func sensitiveRanges(in s: String) -> [Range<String.Index>] {
     }
     return found
 }
+
+/// How many pixel rows and columns on each side are plain background: the colour of the top-left corner, give or take
+/// `tolerance` per channel. Nil when the edges aren't plain or the whole image is.
+nonisolated func plainMargins(_ image: CGImage, tolerance: Int = 10) -> (top: Int, left: Int, bottom: Int, right: Int)? {
+    let w = image.width, h = image.height
+    guard w > 2, h > 2, let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                             space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
+          let data = ctx.data else { return nil }
+    ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+    let p = data.bindMemory(to: UInt8.self, capacity: w * h * 4)
+    // The bitmap's first row is the top of the image.
+    func at(_ x: Int, _ y: Int) -> Int { (y * w + x) * 4 }
+    let bg = at(0, 0)
+    func plain(_ x: Int, _ y: Int) -> Bool {
+        let i = at(x, y)
+        return (0..<4).allSatisfy { abs(Int(p[i + $0]) - Int(p[bg + $0])) <= tolerance }
+    }
+    var top = 0
+    while top < h, (0..<w).allSatisfy({ plain($0, top) }) { top += 1 }
+    guard top < h else { return nil }
+    var bottom = 0
+    while (0..<w).allSatisfy({ plain($0, h - 1 - bottom) }) { bottom += 1 }
+    let rows = top..<(h - bottom)
+    var left = 0
+    while rows.allSatisfy({ plain(left, $0) }) { left += 1 }
+    var right = 0
+    while rows.allSatisfy({ plain(w - 1 - right, $0) }) { right += 1 }
+    return (top, left, bottom, right)
+}
