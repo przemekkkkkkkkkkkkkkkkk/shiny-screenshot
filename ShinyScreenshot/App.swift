@@ -31,6 +31,7 @@ private struct MenuContent: View {
             .disabled(shiny.lastArea == nil)
         Button("Capture Full Screen") { shiny.capture(.fullScreen) }
         Button("Capture Scrolling Area") { shiny.capture(.scrolling) }
+        Button("Record Screen Area") { shiny.capture(.recording) }
         Menu("Capture After Delay") {
             ForEach([3, 5, 10], id: \.self) { n in
                 Button("\(n) Seconds") { shiny.capture(after: n) }
@@ -82,9 +83,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-enum OverlayAction { case copy, save, pin, scroll, cancel }
+enum OverlayAction { case copy, save, pin, scroll, record, video, pickImage, cancel }
 
-enum CaptureMode: String, Codable { case area, window, again, fullScreen, scrolling }
+enum CaptureMode: String, Codable { case area, window, again, fullScreen, scrolling, recording }
 
 /// Owns the capture overlay and the floating cards and pins it leaves behind.
 @Observable
@@ -104,6 +105,8 @@ final class Shiny {
     private var settings: NSWindow?
     private var library: NSWindow?
     private var hotkeys: [HotkeyAction: Hotkey] = [:]
+    /// The image picker is open over the overlay, so losing key status doesn't close it.
+    private var picking = false
     /// From the hotkey until the overlay closes (or an alert is dismissed), so a second press can't start a second capture.
     private var busy = false
 
@@ -124,6 +127,7 @@ final class Shiny {
                 case .area: break
                 case .window: session.windowsOnly = true
                 case .scrolling: session.scrolling = true
+                case .recording: session.recording = true
                 case .fullScreen: session.selectAll()
                 case .again:
                     // Clipped to this screen; if none of it is here, select as usual.
@@ -247,7 +251,7 @@ final class Shiny {
         }
         // Clicking another app (say, on a second display) takes the keyboard away: cancel instead of leaving Esc dead.
         resignObserver = NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: window, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.closeOverlay() }
+            MainActor.assumeIsolated { if self?.picking != true { self?.closeOverlay() } }
         }
     }
 
@@ -277,8 +281,8 @@ final class Shiny {
         case (UInt16(kVK_Escape), _, _):
             if s.tool != nil { s.tool = nil } else if s.style.enabled { s.style.enabled = false } else { closeOverlay() }
         case (UInt16(kVK_Return), _, _), (UInt16(kVK_ANSI_KeypadEnter), _, _), (_, true, "c"):
-            handle(s.scrolling ? .scroll : .copy, s)
-        case _ where s.scrolling:
+            handle(s.scrolling ? .scroll : s.recording ? .record : .copy, s)
+        case _ where s.scrolling || s.recording:
             return e
         case (_, true, "z"):
             s.undo()
@@ -307,10 +311,20 @@ final class Shiny {
 
     private func handle(_ action: OverlayAction, _ s: Session) {
         if action == .cancel { return closeOverlay() }
+        if action == .pickImage { return pickImage(for: s) }
         guard !s.selection.isEmpty else { return }
         if action == .scroll {
             closeOverlay()
             return scroll(s.selection, on: s)
+        }
+        if action == .record {
+            closeOverlay()
+            return record(s.selection, on: s)
+        }
+        if s.video != nil || action == .video {
+            guard action != .pin else { return }
+            closeOverlay()
+            return makeVideo(s, still: s.video == nil, copy: action == .copy)
         }
         guard let shot = Shot(s) else { return }
         closeOverlay()
@@ -320,8 +334,108 @@ final class Shiny {
         case .copy: shot.copy(); showCard(shot, title: "Copied to clipboard")
         case .save: showSaved(shot)
         case .pin: pin(shot)
-        case .scroll, .cancel: break
+        case .scroll, .record, .video, .pickImage, .cancel: break
         }
+    }
+
+    /// Records `area` until Stop, then opens the first frame on the overlay to mark up and style; Copy or Save exports the video.
+    private func record(_ area: CGRect, on s: Session) {
+        guard let screen = s.screen else { return }
+        let defaults = UserDefaults.standard
+        guard let recorder = try? ScreenRecorder(area: area, scale: s.scale, sound: defaults.bool(forKey: "recordSound")) else { return }
+        busy = true
+        let frame = CGRect(x: screen.frame.minX + area.minX, y: screen.frame.maxY - area.maxY, width: area.width, height: area.height)
+        let outline = makePanel(Rectangle().strokeBorder(.red, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+            .frame(width: frame.width + 8, height: frame.height + 8))
+        outline.ignoresMouseEvents = true
+        outline.setFrameOrigin(CGPoint(x: frame.minX - 4, y: frame.minY - 4))
+        weak var bar: NSPanel?
+        func end() {
+            close(outline)
+            if let bar { close(bar) }
+            busy = false
+        }
+        let b = makePanel(RecordingBar(stop: { [weak self] in
+            guard let self, bar != nil else { return }
+            end()
+            Task {
+                guard let url = await recorder.stop(), let poster = await Video.poster(url) else { return }
+                let next = Library.flatSession(poster, scale: s.scale, displayID: s.displayID, fit: screen.frame.size)
+                next.video = url
+                next.mode = .recording
+                next.app = s.app
+                self.open(next)
+            }
+        }, cancel: {
+            guard bar != nil else { return }
+            end()
+            Task { await recorder.cancel() }
+        }))
+        bar = b
+        let below = frame.minY - b.frame.height
+        let y = below > screen.visibleFrame.minY ? below : min(frame.maxY, screen.visibleFrame.maxY - b.frame.height)
+        b.setFrameOrigin(CGPoint(x: frame.midX - b.frame.width / 2, y: y))
+        outline.orderFrontRegardless()
+        b.orderFrontRegardless()
+        let cursor = defaults.object(forKey: "recordCursor") as? Bool ?? true
+        Task {
+            do {
+                try await recorder.start(area: area, displayID: s.displayID, scale: s.scale, cursor: cursor)
+            } catch {
+                end()
+                Self.explainFailure(error)
+            }
+        }
+    }
+
+    /// A video of the session: the still with its camera move, or the recording with its background. Copy puts the file on the
+    /// clipboard; Save writes it to the save folder.
+    private func makeVideo(_ s: Session, still: Bool, copy: Bool) {
+        s.commitText()
+        let job = VideoJob()
+        let poster = s.render().map { NSImage(cgImage: $0, size: s.canvas) } ?? NSImage()
+        let temp = FileManager.default.temporaryDirectory.appending(path: Bundle.main.bundleIdentifier ?? "ShinyScreenshot").appending(path: "Videos")
+        try? FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        let url = Video.newFile(in: copy ? temp : Shot.folder, prefix: still ? "Shiny Video" : "Shiny Recording")
+        weak var panel: NSPanel?
+        let p = makePanel(VideoCard(job: job, poster: poster, title: copy ? "Video copied to clipboard" : "Saved to \(Shot.folderName)") { [weak self] in
+            if let panel { self?.close(panel) }
+        })
+        panel = p
+        if let screen = s.screen { p.setFrameOrigin(CGPoint(x: screen.visibleFrame.minX, y: screen.visibleFrame.minY)) }
+        p.orderFrontRegardless()
+        Task {
+            do {
+                if still {
+                    try await Video.motion(s, to: url) { job.progress = $0 }
+                } else {
+                    try await Video.styled(s, to: url)
+                }
+                job.url = url
+                if copy {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.writeObjects([url as NSURL])
+                }
+            } catch {
+                job.failed = true
+            }
+        }
+    }
+
+    /// Picks a picture for the background, above the overlay.
+    private func pickImage(for s: Session) {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.image]
+        panel.message = "Choose a background picture"
+        panel.level = NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue + 1)
+        picking = true
+        let ok = panel.runModal() == .OK
+        picking = false
+        if ok, let url = panel.url, let path = Pictures.keep(url) {
+            s.style.imagePath = path
+            s.style.fill = .image
+        }
+        overlay?.makeKeyAndOrderFront(nil)
     }
 
     /// Records `area` while you scroll, with an outline around it and Done and Cancel below. Done copies the tall result.

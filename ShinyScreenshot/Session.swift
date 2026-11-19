@@ -1,4 +1,5 @@
 import SwiftUI
+import Vision
 
 enum Tool: String, CaseIterable, Identifiable, Codable {
     case arrow, rect, highlight, spotlight, blur, step, text, pen
@@ -109,6 +110,14 @@ final class Session {
     /// Pixels per point the export is tagged with, when it differs from `scale`: a capture shrunk to fit a smaller
     /// screen keeps every pixel and pastes at its original size.
     var pasteScale: CGFloat?
+    /// A screen recording this session styles; the frozen image is its first frame.
+    var video: URL?
+    /// Recording: the selection is the area to record, not to mark up.
+    var recording = false
+    /// Emails, keys and the like found in the selection, in screen points; hidden when the style asks.
+    private(set) var redactions: [CGRect] = []
+    @ObservationIgnored private var redactedSelection: CGRect?
+    @ObservationIgnored private var magicCache: (CGRect, [Int])?
 
     /// `create` remembers what to restore if the new selection ends up too small.
     private enum Drag {
@@ -284,42 +293,156 @@ final class Session {
         if annotations.popLast()?.id == editingText { editingText = nil }
     }
 
-    /// Title and description, when the background is on and there is text to show.
-    var heading: HeadingLayout? {
-        style.enabled ? HeadingLayout(style, width: max(selection.width, 320)) : nil
+    /// The shot with its window frame and ring, before padding.
+    var boxSize: CGSize {
+        guard style.enabled else { return selection.size }
+        let c = style.frame.chrome, ring = style.ringWidth
+        return CGSize(width: selection.width + c.left + c.right + 2 * ring, height: selection.height + c.top + c.bottom + 2 * ring)
     }
 
-    /// The shot plus its title and description, before padding.
+    /// Title and description, when the background is on and there is text to show.
+    var heading: HeadingLayout? {
+        style.enabled ? HeadingLayout(style, width: max(boxSize.width, 320)) : nil
+    }
+
+    /// Every copy of the shot together: one, two side by side, or a stack.
+    private var groupSize: CGSize {
+        let b = boxSize
+        switch style.enabled ? style.layout : .single {
+        case .single: return b
+        case .duo: return CGSize(width: b.width * 1.61, height: b.height * 1.07)
+        case .stack: return CGSize(width: b.width * 1.1, height: b.height * 1.1)
+        }
+    }
+
+    /// The shots plus their title and description, before padding.
     private var content: CGSize {
-        guard let h = heading else { return selection.size }
-        return CGSize(width: max(selection.width, h.width), height: selection.height + h.gap + h.height)
+        let g = groupSize
+        guard let h = heading else { return g }
+        return CGSize(width: max(g.width, h.width), height: g.height + h.gap + h.height)
+    }
+
+    /// Auto balance: the same room on every side, in proportion to the shot.
+    var effectivePadding: CGFloat {
+        guard style.autoBalance else { return style.padding }
+        let b = boxSize
+        return min(max((max(b.width, b.height) * 0.08).rounded(), 32), 120)
+    }
+
+    /// How far the shot runs off the canvas edge, when it bleeds.
+    private var bleedDepth: CGFloat {
+        style.enabled && style.bleed && !style.autoBalance ? (boxSize.height * 0.18).rounded() : 0
     }
 
     /// Size of the exported image, in whole device pixels.
     var canvas: CGSize {
-        let c = style.enabled ? canvasSize(shot: content, padding: style.padding, ratio: style.ratio.value) : selection.size
-        return CGSize(width: (c.width * scale).rounded() / scale, height: (c.height * scale).rounded() / scale)
+        guard style.enabled else { return snappedSize(selection.size) }
+        let p = effectivePadding, bleed = bleedDepth
+        var c = canvasSize(shot: content, padding: p, ratio: nil)
+        if bleed > 0 { c.height -= p + bleed }
+        if let r = style.aspect {
+            if c.width / c.height < r { c.width = c.height * r } else { c.height = c.width / r }
+        }
+        return snappedSize(c)
     }
 
-    /// Where the shot sits inside the canvas: centred with its text, on the pixel grid.
+    private func snappedSize(_ c: CGSize) -> CGSize {
+        CGSize(width: (c.width * scale).rounded() / scale, height: (c.height * scale).rounded() / scale)
+    }
+
+    private var contentOrigin: CGPoint {
+        let c = canvas, inner = content, p = effectivePadding, bleed = bleedDepth
+        let unit = style.autoBalance ? CGPoint(x: 0.5, y: 0.5) : style.placement.unit
+        let x = p + (c.width - inner.width - 2 * p) * unit.x
+        if bleed > 0 { return CGPoint(x: x, y: unit.y == 0 ? -bleed : c.height - inner.height + bleed) }
+        return CGPoint(x: x, y: p + (c.height - inner.height - 2 * p) * unit.y)
+    }
+
+    /// Where the group of shots starts.
+    private var groupOrigin: CGPoint {
+        let o = contentOrigin, g = groupSize
+        let dx = (content.width - g.width) / 2
+        let dy = heading.map { $0.style.below ? 0 : $0.height + $0.gap } ?? 0
+        return CGPoint(x: o.x + dx, y: o.y + dy)
+    }
+
+    /// Where the shot itself (the selection) sits inside the canvas, on the pixel grid.
     var shotOrigin: CGPoint {
-        let top = contentOrigin.y + (heading.map { $0.style.below ? 0 : $0.height + $0.gap } ?? 0)
-        return snapped(CGPoint(x: (canvas.width - selection.width) / 2, y: top))
+        guard style.enabled else { return .zero }
+        let g = groupOrigin, b = boxSize, gs = groupSize
+        let box = style.layout == .stack ? CGPoint(x: g.x + gs.width - b.width, y: g.y + gs.height - b.height) : g
+        let c = style.frame.chrome, ring = style.ringWidth
+        return snapped(CGPoint(x: box.x + c.left + ring, y: box.y + c.top + ring))
+    }
+
+    /// The framed shot: frame and ring around the selection.
+    var boxFrame: CGRect {
+        let o = shotOrigin, c = (style.enabled ? style.frame : .none).chrome, ring = style.enabled ? style.ringWidth : 0
+        return CGRect(origin: CGPoint(x: o.x - c.left - ring, y: o.y - c.top - ring), size: boxSize)
     }
 
     var textOrigin: CGPoint {
         guard let h = heading else { return .zero }
-        let x = (canvas.width - h.width) / 2
-        return snapped(CGPoint(x: x, y: h.style.below ? contentOrigin.y + selection.height + h.gap : contentOrigin.y))
-    }
-
-    private var contentOrigin: CGPoint {
-        CGPoint(x: (canvas.width - content.width) / 2, y: (canvas.height - content.height) / 2)
+        let o = contentOrigin
+        let x = o.x + (content.width - h.width) / 2
+        return snapped(CGPoint(x: x, y: h.style.below ? o.y + groupSize.height + h.gap : o.y))
     }
 
     private func snapped(_ p: CGPoint) -> CGPoint {
         CGPoint(x: (p.x * scale).rounded() / scale, y: (p.y * scale).rounded() / scale)
     }
+
+    /// Pixels per point of the export.
+    var exportScale: CGFloat {
+        style.enabled ? style.size.scale(screen: scale, width: canvas.width) : scale
+    }
+
+    /// Colours that stand out in the selection, for the Magic backgrounds.
+    var magicColors: [Int] {
+        if let (r, c) = magicCache, r == selection { return c }
+        let px = CGRect(x: selection.minX * scale, y: selection.minY * scale, width: selection.width * scale, height: selection.height * scale)
+        let c = image.cropping(to: px.integral).map { dominantColors($0) } ?? []
+        magicCache = (selection, c)
+        return c
+    }
+
+    /// Finds emails, keys and the like in the selection, once per selection.
+    func detectSensitive() {
+        guard style.enabled, style.redact else { return }
+        guard redactedSelection != selection else { return }
+        redactedSelection = selection
+        let sel = selection
+        let px = CGRect(x: sel.minX * scale, y: sel.minY * scale, width: sel.width * scale, height: sel.height * scale)
+        guard let crop = image.cropping(to: px.integral) else { return redactions = [] }
+        redactions = Self.sensitiveBoxes(in: crop).map {
+            CGRect(x: sel.minX + $0.minX * sel.width, y: sel.minY + $0.minY * sel.height, width: $0.width * sel.width, height: $0.height * sel.height)
+                .insetBy(dx: -3, dy: -3)
+        }
+        if !redactions.isEmpty { pixelatedNow() }
+    }
+
+    /// Boxes, as fractions of the image with a top-left origin, around text that looks sensitive.
+    nonisolated static func sensitiveBoxes(in image: CGImage) -> [CGRect] {
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = false
+        try? VNImageRequestHandler(cgImage: image).perform([request])
+        return (request.results ?? []).flatMap { o -> [CGRect] in
+            guard let c = o.topCandidates(1).first else { return [] }
+            return sensitiveRanges(in: c.string).compactMap { r in
+                (try? c.boundingBox(for: r)).map { b in
+                    let r = b.boundingBox
+                    return CGRect(x: r.minX, y: 1 - r.maxY, width: r.width, height: r.height)
+                }
+            }
+        }
+    }
+
+    /// The wallpaper behind this screen, for the Desktop backgrounds.
+    var desktopImage: NSImage? { Pictures.desktop(for: screen) }
+
+    /// What the export hides: redactions while they're on.
+    var hiddenAreas: [CGRect] { style.enabled && style.redact ? redactions : [] }
 
     func preparePixelated() {
         guard pixelated == nil, pixelating == nil else { return }
@@ -350,23 +473,30 @@ final class Session {
     }
 
     /// Nothing see-through: no transparent background and no window corners. Saved as RGB, which is smaller.
-    var isOpaque: Bool { style.enabled ? style.backdrop != .clear : activeWindowShot == nil }
+    var isOpaque: Bool {
+        guard style.enabled else { return activeWindowShot == nil }
+        return !(style.fill == .backdrop && style.backdrop == .clear) && !style.transparent && style.canvasRadius == 0
+    }
 
     func render() -> CGImage? {
         commitText()
         // Blur must never fall back to grey in the export.
         if activeWindowShot == nil, annotations.contains(where: { $0.tool == .blur }) { pixelatedNow() }
+        detectSensitive()
         let renderer = ImageRenderer(content: ComposedView(s: self))
-        renderer.scale = scale
+        renderer.scale = exportScale
         return renderer.cgImage
     }
+
+    /// Width kept clear on the right for the style panel.
+    let panelRoom: CGFloat = 450
 
     /// Where the background preview sits on screen: on the selection, scaled down to leave room for the panel.
     var previewFrame: CGRect {
         let c = canvas
-        let k = max(0.05, min(1, (size.width - 340) / c.width, (size.height - 170) / c.height))
+        let k = max(0.05, min(1, (size.width - panelRoom - 40) / c.width, (size.height - 170) / c.height))
         let w = c.width * k, h = c.height * k
-        return CGRect(x: min(max(selection.midX - w / 2, 20), size.width - 320 - w),
+        return CGRect(x: min(max(selection.midX - w / 2, 20), size.width - panelRoom - 20 - w),
                       y: min(max(selection.midY - h / 2, 50), size.height - 100 - h),
                       width: w, height: h)
     }
@@ -375,10 +505,10 @@ final class Session {
     /// On screens too narrow to fit it beside the background panel, it docks at the bottom instead.
     func toolbarCenter(around r: CGRect) -> CGPoint {
         let half: CGFloat = 386
-        if style.enabled && size.width - 300 < 2 * half {
+        if style.enabled && size.width - panelRoom < 2 * half {
             return CGPoint(x: max(size.width / 2, min(half, size.width - half)), y: size.height - 34)
         }
-        let right = style.enabled ? size.width - 300 : size.width
+        let right = style.enabled ? size.width - panelRoom : size.width
         let top = screen?.safeAreaInsets.top ?? 0
         let y = r.maxY + 60 < size.height ? r.maxY + 34 : (r.minY - 60 > top ? r.minY - 34 : r.maxY - 34)
         return CGPoint(x: min(max(r.midX, half), right - half), y: y)

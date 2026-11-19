@@ -379,6 +379,7 @@ extension CaptureMode {
         case .window: "Window"
         case .fullScreen: "Full Screen"
         case .scrolling: "Scrolling"
+        case .recording: "Recording"
         }
     }
 
@@ -388,6 +389,7 @@ extension CaptureMode {
         case .window: "macwindow"
         case .fullScreen: "display"
         case .scrolling: "arrow.up.and.down.text.horizontal"
+        case .recording: "record.circle"
         }
     }
 }

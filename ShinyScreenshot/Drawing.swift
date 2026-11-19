@@ -58,6 +58,86 @@ struct Style: Codable {
     var textScale: CGFloat = 1
     var textShadow = false
 
+    // Fill
+    var fill = FillSource.backdrop
+    var gradient = CustomGradient()
+    /// A picture you chose, copied into Application Support.
+    var imagePath: String?
+    var blur: CGFloat = 0
+    /// 0…1, film grain over the background.
+    var noise: CGFloat = 0
+    /// 0.4…1.4.
+    var brightness: CGFloat = 1
+    var pattern = Pattern.none
+    var patternAmount: CGFloat = 0.25
+    var light = LightScene.none
+    var shapes = Shapes.none
+    var vfx = VFX.none
+    var vignette = false
+    // Shot
+    var shotLook = ShotLook.plain
+    var inset: CGFloat = 0
+    var shadowLook = ShadowLook.soft
+    var layout = ShotLayout.single
+    var redact = false
+    var frame = WindowFrame.none
+    var address = "yourapp.com"
+    // Canvas
+    var platform: Platform?
+    /// Pixels; wins over the platform and ratio.
+    var customSize: CGSize?
+    var autoBalance = false
+    var placement = Placement.center
+    var bleed = false
+    var zoom: CGFloat = 1
+    /// Degrees.
+    var rotation: CGFloat = 0
+    var tilt = Tilt.flat
+    var tiltX: CGFloat = 0
+    var tiltY: CGFloat = 0
+    var canvasRadius: CGFloat = 0
+    // Brand
+    var watermark = false
+    var watermarkText = "@shinyshot"
+    var watermarkCorner = Corner.bottomRight
+    var watermarkOpacity: CGFloat = 0.85
+    var watermarkPill = true
+    // Export
+    var format = ExportFormat.png
+    var size = ExportSize.native
+    /// Keeps the padding but leaves it see-through.
+    var transparent = false
+    var motion = Motion.zoom
+    var seconds: Double = 4
+
+    init() {}
+
+    /// Every field falls back to its default, so styles saved by older versions still open.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = Style()
+        func v<T: Decodable>(_ k: CodingKeys, _ fallback: T) -> T { (try? c.decodeIfPresent(T.self, forKey: k)) ?? fallback }
+        enabled = v(.enabled, d.enabled); backdrop = v(.backdrop, d.backdrop); padding = v(.padding, d.padding)
+        radius = v(.radius, d.radius); shadow = v(.shadow, d.shadow); ratio = v(.ratio, d.ratio)
+        eyebrow = v(.eyebrow, d.eyebrow); title = v(.title, d.title); subtitle = v(.subtitle, d.subtitle)
+        heading = v(.heading, d.heading); font = v(.font, d.font); weight = v(.weight, d.weight); align = v(.align, d.align)
+        below = v(.below, d.below); textColor = v(.textColor, d.textColor); textScale = v(.textScale, d.textScale)
+        textShadow = v(.textShadow, d.textShadow)
+        fill = v(.fill, d.fill); gradient = v(.gradient, d.gradient); imagePath = v(.imagePath, d.imagePath)
+        blur = v(.blur, d.blur); noise = v(.noise, d.noise); brightness = v(.brightness, d.brightness)
+        pattern = v(.pattern, d.pattern); patternAmount = v(.patternAmount, d.patternAmount); light = v(.light, d.light)
+        shapes = v(.shapes, d.shapes); vfx = v(.vfx, d.vfx); vignette = v(.vignette, d.vignette)
+        shotLook = v(.shotLook, d.shotLook); inset = v(.inset, d.inset); shadowLook = v(.shadowLook, d.shadowLook)
+        layout = v(.layout, d.layout); redact = v(.redact, d.redact); frame = v(.frame, d.frame); address = v(.address, d.address)
+        platform = v(.platform, d.platform); customSize = v(.customSize, d.customSize); autoBalance = v(.autoBalance, d.autoBalance)
+        placement = v(.placement, d.placement); bleed = v(.bleed, d.bleed); zoom = v(.zoom, d.zoom); rotation = v(.rotation, d.rotation)
+        tilt = v(.tilt, d.tilt); tiltX = v(.tiltX, d.tiltX); tiltY = v(.tiltY, d.tiltY); canvasRadius = v(.canvasRadius, d.canvasRadius)
+        watermark = v(.watermark, d.watermark); watermarkText = v(.watermarkText, d.watermarkText)
+        watermarkCorner = v(.watermarkCorner, d.watermarkCorner); watermarkOpacity = v(.watermarkOpacity, d.watermarkOpacity)
+        watermarkPill = v(.watermarkPill, d.watermarkPill); format = v(.format, d.format); size = v(.size, d.size)
+        transparent = v(.transparent, d.transparent); motion = v(.motion, d.motion); seconds = v(.seconds, d.seconds)
+    }
+
     /// Picks a preset and the font, weight and position it comes with; colour, size and shadow stay as chosen.
     mutating func apply(_ h: Heading) {
         heading = h
@@ -210,7 +290,7 @@ struct HeadingLayout {
     }
 }
 
-private struct HeadingView: View {
+struct HeadingView: View {
     let h: HeadingLayout
 
     var body: some View {
@@ -269,15 +349,27 @@ enum Backdrop: String, CaseIterable, Identifiable, Codable {
         }
     }
 
+    /// The first colour, for glows and adaptive shadows.
+    var keyColor: Int {
+        switch paint {
+        case .image: self == .prism ? 0xC4B5FD : 0x3B5B8C
+        case .clear: 0x888888
+        case let .solid(c): c
+        case let .mesh(c), let .linear(c), let .angular(c), let .radial(c): c[c.count / 2]
+        }
+    }
+
     /// Takes dark text; everything else takes white. Judged by the colours' mean luminance.
-    var isLight: Bool {
-        let colors: [Int] = switch paint {
+    var isLight: Bool { colors.map(luminance).reduce(0, +) / Double(colors.count) > 0.45 }
+
+    /// The colours it is painted with; wallpapers stand in as one.
+    var colors: [Int] {
+        switch paint {
         case .image: self == .prism ? [0xFFFFFF] : [0]
         case .clear: [0xFFFFFF]
         case let .solid(c): [c]
         case let .mesh(c), let .linear(c), let .angular(c), let .radial(c): c
         }
-        return colors.map(luminance).reduce(0, +) / Double(colors.count) > 0.45
     }
 
     private var paint: Paint {
@@ -394,7 +486,7 @@ enum Backdrop: String, CaseIterable, Identifiable, Codable {
 }
 
 /// WCAG relative luminance of an sRGB colour.
-private func luminance(_ hex: Int) -> Double {
+nonisolated func luminance(_ hex: Int) -> Double {
     [16, 8, 0].map { Double((hex >> $0) & 0xFF) / 255 }
         .map { $0 <= 0.04045 ? $0 / 12.92 : pow(($0 + 0.055) / 1.055, 2.4) }
         .enumerated().map { [0.2126, 0.7152, 0.0722][$0] * $1 }.reduce(0, +)
@@ -403,18 +495,20 @@ private func luminance(_ hex: Int) -> Double {
 /// The selected part of the frozen screen with its annotations, at selection size.
 struct ShotView: View {
     let s: Session
+    /// Off for the layer drawn over a video: only the marks.
+    var drawsImage = true
 
     var body: some View {
         // Read observed state here, not inside the Canvas closure, so changes redraw.
         let sel = s.selection, annotations = s.annotations.filter { $0.id != s.editingText }
-        let window = s.activeWindowShot
+        let window = s.activeWindowShot, hidden = s.hiddenAreas
         let full = window?.frame ?? s.bounds
         let image = Image(decorative: window?.image ?? s.image, scale: s.scale)
         // Until the blur copy is ready, blur shows flat grey, never the pixels it hides.
         let pixelated = Image(decorative: window?.pixelated ?? s.pixelated ?? Capture.grey, scale: s.scale)
         Canvas { ctx, _ in
             ctx.translateBy(x: -sel.minX, y: -sel.minY)
-            ctx.draw(image, in: full)
+            if drawsImage { ctx.draw(image, in: full) }
             // Spotlights dim everything else, so they go under the other marks. Source-atop keeps see-through window corners clear.
             let spots = annotations.filter { $0.tool == .spotlight }
             if !spots.isEmpty {
@@ -429,30 +523,15 @@ struct ShotView: View {
             for a in annotations where a.tool != .spotlight {
                 draw(a, in: ctx, pixelated: pixelated, full: full)
             }
-        }
-        .frame(width: sel.width, height: sel.height)
-    }
-}
-
-/// What gets exported: the shot, plus background, padding, corners and shadow when enabled.
-struct ComposedView: View {
-    let s: Session
-
-    var body: some View {
-        let style = s.style, size = s.canvas, origin = s.shotOrigin
-        ZStack(alignment: .topLeading) {
-            if style.enabled { style.backdrop.view.frame(width: size.width, height: size.height) }
-            ShotView(s: s)
-                .clipShape(RoundedRectangle(cornerRadius: style.enabled ? style.radius : 0, style: .continuous))
-                .shadow(color: .black.opacity(style.enabled ? style.shadow : 0), radius: 26, y: 14)
-                .offset(x: origin.x, y: origin.y)
-            if let h = s.heading {
-                let t = s.textOrigin
-                HeadingView(h: h).offset(x: t.x, y: t.y)
+            // Emails, keys and the like the background panel was asked to hide.
+            for r in hidden {
+                ctx.drawLayer { l in
+                    l.clip(to: Path(roundedRect: r, cornerRadius: 4))
+                    l.draw(pixelated, in: full)
+                }
             }
         }
-        .frame(width: size.width, height: size.height, alignment: .topLeading)
-        .clipped()
+        .frame(width: sel.width, height: sel.height)
     }
 }
 

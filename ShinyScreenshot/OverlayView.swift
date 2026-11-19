@@ -62,7 +62,7 @@ struct OverlayView: View {
             }
             if s.phase == .editing {
                 Group {
-                    if s.scrolling { ScrollStart(act: act) } else { Toolbar(s: s, act: act) }
+                    if s.scrolling { ScrollStart(act: act) } else if s.recording { RecordStart(act: act) } else { Toolbar(s: s, act: act) }
                 }
                 .position(s.toolbarCenter(around: preview ?? s.selection))
                 if preview == nil, s.tool == .text || s.editingText != nil {
@@ -72,12 +72,13 @@ struct OverlayView: View {
                 }
             }
             if preview != nil {
-                BackgroundPanel(s: s)
-                    .position(x: s.size.width - 150, y: s.size.height / 2)
+                StylePanel(s: s, act: act)
+                    .position(x: s.size.width - s.panelRoom / 2, y: s.size.height / 2)
             }
             if s.phase == .selecting {
                 Pill(text: s.windowsOnly ? "Click a window. Esc cancels."
                      : s.scrolling ? "Drag over the part that scrolls. Esc cancels."
+                     : s.recording ? "Drag over the area to record, or click a window. Esc cancels."
                      : "Drag to select an area, or click a window. Esc cancels.")
                     .position(x: s.size.width / 2, y: 64)
                 if let c = s.cursor { Loupe(s: s, p: c) }
@@ -212,13 +213,34 @@ private struct Toolbar: View {
             }
             Divider().frame(height: 20).padding(.horizontal, 4)
             BarButton(symbol: "arrow.uturn.backward", help: "Undo (⌘Z)") { s.undo() }
-            BarButton(symbol: "pin", help: "Pin to screen") { act(.pin) }
+            if s.video == nil { BarButton(symbol: "pin", help: "Pin to screen") { act(.pin) } }
             BarButton(symbol: "square.and.arrow.down", help: "Save to \(Shot.folderName) (⌘S)") { act(.save) }
             BarButton(symbol: "photo.artframe", title: "Background", on: s.style.enabled, help: "Add a background") {
                 s.commitText()
                 s.style.enabled.toggle()
             }
             BarButton(symbol: "doc.on.doc", title: "Copy", on: true, help: "Copy to clipboard (Return)") { act(.copy) }
+        }
+        .padding(5)
+        .background(Color(white: 0.11).opacity(0.94), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.white.opacity(0.12)))
+        .environment(\.colorScheme, .dark)
+        .fixedSize()
+    }
+}
+
+/// Screen recording's toolbar: sound and pointer, then start.
+private struct RecordStart: View {
+    let act: (OverlayAction) -> Void
+    @AppStorage("recordSound") private var sound = false
+    @AppStorage("recordCursor") private var cursor = true
+
+    var body: some View {
+        HStack(spacing: 2) {
+            BarButton(symbol: "xmark", help: "Cancel (Esc)") { act(.cancel) }
+            BarButton(symbol: sound ? "speaker.wave.2.fill" : "speaker.slash", on: false, help: sound ? "Records the Mac's sound" : "No sound") { sound.toggle() }
+            BarButton(symbol: cursor ? "cursorarrow" : "cursorarrow.slash", help: cursor ? "Shows the pointer" : "Hides the pointer") { cursor.toggle() }
+            BarButton(symbol: "record.circle", title: "Start Recording", on: true, help: "Start recording (Return)") { act(.record) }
         }
         .padding(5)
         .background(Color(white: 0.11).opacity(0.94), in: RoundedRectangle(cornerRadius: 12))
@@ -269,149 +291,7 @@ private struct BarButton: View {
     }
 }
 
-private struct BackgroundPanel: View {
-    @Bindable var s: Session
-
-    var body: some View {
-        // Scrolls only on screens too short to show it all.
-        ViewThatFits(in: .vertical) {
-            content
-            ScrollView { content }.scrollIndicators(.never)
-        }
-        .frame(width: 270)
-        .frame(maxHeight: s.size.height - 40)
-        .fixedSize(horizontal: false, vertical: true)
-        .background(Color(white: 0.11).opacity(0.94), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.white.opacity(0.12)))
-        .environment(\.colorScheme, .dark)
-    }
-
-    private var content: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Background").font(.system(size: 13, weight: .semibold))
-                Spacer()
-                Button("Shuffle", systemImage: "shuffle") {
-                    s.style.backdrop = Backdrop.allCases.filter { $0 != s.style.backdrop && $0 != .clear }.randomElement() ?? .peach
-                }
-                .controlSize(.small)
-            }
-            BackdropGallery(selection: $s.style.backdrop)
-            Divider()
-            LabeledSlider(label: "Padding", value: $s.style.padding, range: 0...160, text: "\(Int(s.style.padding))")
-            LabeledSlider(label: "Roundness", value: $s.style.radius, range: 0...32, text: "\(Int(s.style.radius))")
-            LabeledSlider(label: "Shadow", value: $s.style.shadow, range: 0...0.8, text: "\(Int(s.style.shadow * 125))%")
-            Divider()
-            PanelSection(title: "Size") {
-                Chips(options: Ratio.allCases, selection: $s.style.ratio, label: \.rawValue, hint: \.hint)
-            }
-            Divider()
-            PanelSection(title: "Text") {
-                VStack(spacing: 4) {
-                    PanelField(prompt: "Label, like NEW or STEP 1", text: $s.style.eyebrow)
-                    PanelField(prompt: "Title", text: $s.style.title)
-                    PanelField(prompt: "Description", text: $s.style.subtitle)
-                }
-                Chips(options: Heading.allCases, selection: Binding { s.style.heading } set: { s.style.apply($0) },
-                      label: \.rawValue, hint: \.hint)
-                // Fine-tuning appears once there is text to tune.
-                if s.heading != nil {
-                    Chips(options: Array(TextFont.allCases.prefix(4)), selection: $s.style.font, label: \.name, hint: \.hint)
-                    Chips(options: Array(TextFont.allCases.suffix(4)), selection: $s.style.font, label: \.name, hint: \.hint)
-                    Chips(options: TextWeight.allCases, selection: $s.style.weight, label: \.rawValue, hint: \.hint)
-                    HStack(spacing: 8) {
-                        Chips(options: [false, true], selection: $s.style.below,
-                              label: { $0 ? "Below" : "Above" }, hint: { $0 ? "Text under the shot" : "Text over the shot" })
-                        Chips(options: TextAlign.allCases, selection: $s.style.align, label: \.rawValue, hint: \.hint)
-                    }
-                    ColorRow(selection: $s.style.textColor)
-                    LabeledSlider(label: "Text size", value: $s.style.textScale, range: 0.6...1.8,
-                                  text: "\(Int((s.style.textScale * 100).rounded()))%")
-                    Toggle("Text shadow", isOn: $s.style.textShadow)
-                        .toggleStyle(.switch).controlSize(.mini).tint(Color.mark)
-                        .font(.system(size: 12)).foregroundStyle(.secondary)
-                }
-            }
-        }
-        .padding(14)
-    }
-}
-
-/// Every background, in sections; the chips above jump to one.
-private struct BackdropGallery: View {
-    @Binding var selection: Backdrop
-
-    var body: some View {
-        ScrollViewReader { proxy in
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 4) {
-                    ForEach(Backdrop.Group.allCases) { g in
-                        let on = selection.group == g
-                        Button { withAnimation { proxy.scrollTo(g, anchor: .top) } } label: {
-                            Text(g.rawValue)
-                                .font(.system(size: 10.5, weight: .medium))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
-                                .foregroundStyle(on ? .primary : .secondary)
-                                .frame(maxWidth: .infinity, minHeight: 22)
-                                .background(.white.opacity(on ? 0.14 : 0.06), in: RoundedRectangle(cornerRadius: 6))
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .help("\(g.backdrops.count) \(g.rawValue.lowercased())")
-                    }
-                }
-                ScrollView {
-                    // Not lazy: 67 small tiles, and a lazy stack misjudges section heights when jumping to one.
-                    VStack(alignment: .leading, spacing: 8) {
-                        ForEach(Backdrop.Group.allCases) { g in
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(g.rawValue).font(.system(size: 10.5, weight: .medium)).foregroundStyle(.tertiary)
-                                    .padding(.leading, 3)
-                                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 5), spacing: 0) {
-                                    ForEach(g.backdrops) { b in tile(b) }
-                                }
-                            }
-                            .id(g)
-                        }
-                    }
-                }
-                .scrollIndicators(.automatic)
-                .frame(height: 190)
-                // The selection ring sits in each tile's padding; pull the grid out so the swatches line up with the rest.
-                .padding(.horizontal, -3)
-                .onAppear { proxy.scrollTo(selection.group, anchor: .top) }
-            }
-        }
-    }
-
-    private func tile(_ b: Backdrop) -> some View {
-        Button { selection = b } label: {
-            b.tile
-                .frame(height: 30)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.white.opacity(0.15)))
-                .padding(3)
-                .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(selection == b ? Color.mark : .clear, lineWidth: 2))
-        }
-        .buttonStyle(.plain)
-        .help(b.name)
-    }
-}
-
-private struct PanelSection<Content: View>: View {
-    let title: String
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.system(size: 12)).foregroundStyle(.secondary)
-            content
-        }
-    }
-}
-
-private struct Chips<Option: Hashable>: View {
+struct Chips<Option: Hashable>: View {
     let options: [Option]
     @Binding var selection: Option
     let label: (Option) -> String
@@ -438,7 +318,7 @@ private struct Chips<Option: Hashable>: View {
     }
 }
 
-private struct ColorRow: View {
+struct ColorRow: View {
     @Binding var selection: Int?
 
     var body: some View {
@@ -465,7 +345,7 @@ private struct ColorRow: View {
     }
 }
 
-private struct PanelField: View {
+struct PanelField: View {
     let prompt: String
     @Binding var text: String
 
@@ -480,7 +360,7 @@ private struct PanelField: View {
     }
 }
 
-private struct LabeledSlider: View {
+struct LabeledSlider: View {
     let label: String
     @Binding var value: CGFloat
     let range: ClosedRange<CGFloat>
