@@ -10,7 +10,47 @@ extension Color {
     static let mark = Color(hex: 0xFFD60A)
 }
 
+/// Liquid Glass on macOS 26 and later; the old smoked panel before that.
+extension View {
+    @ViewBuilder
+    func glassChrome(_ shape: some InsettableShape, tint: Color? = nil, interactive: Bool = false) -> some View {
+        if #available(macOS 26, *) {
+            glassEffect(Glass.regular.tint(tint).interactive(interactive), in: shape)
+                // A lit rim: bright along the top, faint at the sides, a softer catch along the bottom.
+                .overlay(shape.strokeBorder(LinearGradient(colors: [.white.opacity(0.6), .white.opacity(0.04), .white.opacity(0.22)],
+                                                           startPoint: .top, endPoint: .bottom), lineWidth: 1)
+                    .blendMode(.plusLighter)
+                    .allowsHitTesting(false))
+        } else if let tint {
+            background(tint, in: shape)
+        } else {
+            background(.regularMaterial, in: shape)
+                .overlay(shape.strokeBorder(.primary.opacity(0.1)))
+        }
+    }
+
+    /// The "on" control's soft halo in its own colour, like a lit knob under glass.
+    func glow(_ color: Color, _ on: Bool = true) -> some View {
+        shadow(color: on ? color.opacity(0.5) : .clear, radius: 9, y: 2)
+    }
+}
+
+/// Lets neighbouring glass shapes blend and morph as one surface, where Liquid Glass exists.
+struct GlassGroup<Content: View>: View {
+    var spacing: CGFloat = 8
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        if #available(macOS 26, *) {
+            GlassEffectContainer(spacing: spacing) { content }
+        } else {
+            content
+        }
+    }
+}
+
 let palette: [Color] = [0xFF3B30, 0xFF9F0A, 0xFFD60A, 0x34C759, 0x0A84FF, 0xBF5AF2].map(Color.init(hex:))
+let paletteNames = ["Red", "Orange", "Yellow", "Green", "Blue", "Purple"]
 
 enum Ratio: String, CaseIterable, Identifiable, Codable {
     case auto = "Auto", wide = "16:9", portrait = "4:5", square = "1:1", link = "1.91:1"
