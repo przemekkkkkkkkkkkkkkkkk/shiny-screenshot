@@ -180,6 +180,50 @@ input[type=range]{accent-color:var(--acc)}
 .D .dial{width:44px;height:44px;border-radius:50%;background:var(--fill);position:relative;flex:none;cursor:grab;touch-action:none}
 .D .dial i{position:absolute;left:50%;top:50%;width:2px;height:18px;margin-left:-1px;background:var(--acc);transform-origin:50% 0;border-radius:2px}
 
+/* ---------- E: Everything ---------- */
+.sty{position:relative}
+.st-default{background:rgba(255,255,255,.35)}
+.st-glass-light{background:rgba(255,255,255,.26);border:1px solid rgba(255,255,255,.6);backdrop-filter:blur(16px)}
+.st-glass-dark{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(16px)}
+.st-liquid{background:linear-gradient(135deg,rgba(255,255,255,.5),rgba(255,255,255,.1));border:1px solid rgba(255,255,255,.75);backdrop-filter:blur(22px) saturate(1.9)}
+.st-liquid::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:inset 0 1.5px 1px rgba(255,255,255,.9),inset 0 -1px 2px rgba(255,255,255,.35)}
+.st-inset-light{background:#eef1f5;box-shadow:inset 0 1px 3px rgba(0,0,0,.15)}
+.st-inset-dark{background:#1c1c20}
+.st-outline{outline:2px solid rgba(255,255,255,.85);outline-offset:5px}
+.st-border{border:6px solid #fff}
+.f-macdark .fbar,.f-chrome .fbar,.f-windows .fbar{display:flex}
+.f-macdark .fbar{background:#2a2a2e;border-color:#1c1c1f}
+.f-chrome .fbar{background:#dee1e6;height:32px}.f-chrome .fbar b{display:block;background:#fff;border-radius:99px}
+.f-windows .fbar{justify-content:flex-end;gap:16px;background:#f3f3f3;padding-right:14px}
+.f-windows .fbar i{background:none!important;width:auto;height:auto;border-radius:0;font:normal 12px/1 var(--ui);color:#444}
+.f-windows .fbar i:nth-child(1)::after{content:'—'}.f-windows .fbar i:nth-child(2)::after{content:'▢'}.f-windows .fbar i:nth-child(3)::after{content:'✕'}
+.f-arc{padding:8px;background:linear-gradient(135deg,#c4b5fd,#f9a8d4)!important}.f-arc>.app{border-radius:calc(var(--r) - 4px);overflow:hidden}
+.f-macbook{padding:12px;background:#111!important;border-bottom:18px solid #c9cbd1}
+.f-ipad{padding:18px;background:#111!important;border-radius:28px!important}.f-ipad>.app{border-radius:10px;overflow:hidden}
+.sens{transition:filter .2s}
+.redact .sens{filter:blur(4px);background:#cbd5e1;color:transparent!important;border-radius:3px}
+.wm{position:absolute;display:flex;align-items:center;gap:7px;font:600 13px/1 var(--ui);z-index:3}
+.wm i{width:18px;height:18px;border-radius:6px;background:var(--acc)}
+.wm.pill{padding:7px 11px;border-radius:99px;background:rgba(0,0,0,.45);color:#fff;backdrop-filter:blur(10px)}
+.E{display:flex;flex-direction:column;width:420px;overflow:hidden}
+.E .top{padding:14px 14px 8px;display:flex;flex-direction:column;gap:10px}
+.E .strip{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none}
+.E .strip .look{flex:none;width:92px}.E .strip .look .mini{height:54px}.E .strip .look .lname{padding:4px 7px 5px;font-size:10.5px}
+.E .main{flex:1;display:flex;min-height:0;border-top:.5px solid var(--line)}
+.E .rail{flex:none;display:flex;flex-direction:column;gap:2px;padding:8px 6px;border-right:.5px solid var(--line)}
+.E .rail button{width:50px;padding:7px 0 6px;border-radius:11px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--fg2);font-size:9.5px;font-weight:600}
+.E .rail button.on{background:var(--acc);color:var(--on-acc);box-shadow:0 0 16px rgba(255,214,10,.45)}
+.E .pane{flex:1;padding:12px 14px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.E .grp{display:flex;flex-direction:column;gap:7px}
+.E .grp>.cap{display:flex;align-items:center;gap:6px}
+.src{margin-left:auto;font:600 9px/1 var(--ui);letter-spacing:.02em;text-transform:none;padding:3px 6px;border-radius:99px;background:var(--fill);color:var(--fg3)}
+.hv .rev{max-height:0;opacity:0;overflow:hidden;transition:max-height .2s,opacity .2s,margin .2s}
+.hv:hover .rev,.hv:focus-within .rev{max-height:40px;opacity:1;margin-top:7px}
+.vt small{display:block;font-size:9px;color:var(--fg3);margin-top:1px}
+.dims{font:600 11px/1 ui-monospace,Menlo,monospace;color:var(--fg2)}
+#toast{position:fixed;left:50%;top:22px;transform:translate(-50%,-12px);opacity:0;transition:.25s;z-index:120;padding:9px 14px;border-radius:12px;background:rgba(0,0,0,.82);color:#fff;font-weight:600;pointer-events:none}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
 /* ---------- prototype switcher (not part of the design) ---------- */
 #sw{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:100;display:flex;align-items:center;gap:4px;padding:4px;border-radius:99px;background:#000;color:#fff;font:600 12px/1 var(--ui);box-shadow:0 8px 30px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.2)}
 #sw button{height:28px;min-width:28px;padding:0 10px;border-radius:99px;color:#fff}
@@ -197,6 +241,7 @@ input[type=range]{accent-color:var(--acc)}
 </div>
 <div id="dock" class="glass"></div>
 <pre id="state"></pre>
+<div id="toast"></div>
 <div id="sw">
   <button data-sw="-1" title="Previous (←)">‹</button>
   <span class="cur" id="swcur"></span>
@@ -225,7 +270,7 @@ const hsl = h => { const [r,g,b]=rgb(h),mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=
   return [hh, d?d/(1-Math.abs(2*l-1)):0, l]; };
 const fromHsl = (h,s,l) => { const f = n => { const k=(n+h/30)%12, a=s*Math.min(l,1-l); return Math.round(255*(l-a*Math.max(-1,Math.min(k-3,9-k,1)))).toString(16).padStart(2,'0'); }; return '#'+f(0)+f(8)+f(4); };
 const isLight = cs => cs.map(lum).reduce((a,b)=>a+b,0)/cs.length > .45;
-const title = n => n==='rosegold'?'Rose Gold':n==='clear'?'Transparent':n[0].toUpperCase()+n.slice(1);
+const title = n => n==='rosegold'?'Rose Gold':n==='clear'?'Transparent':n==='desktop'?'Desktop':n==='desktopglass'?'Desktop glass':n[0].toUpperCase()+n.slice(1);
 const hueFamily = b => { const hs = b.colors.map(hsl); const sat = hs.reduce((a,x)=>a+x[1],0)/hs.length;
   if (b.kind==='image') return 'all'; if (sat<.18) return 'neutral';
   const h = hs.sort((a,b)=>b[1]-a[1])[0][0];
@@ -245,6 +290,7 @@ function paint(kind, cs, angle=135){
 }
 function customMesh(cs){ const [a,b,c]=cs; return [a,b,c,b,c,a,c,a,b]; }
 function bgPaint(id){
+  if (id==='desktop' || id==='desktopglass') return 'url(../ShinyScreenshot/Assets.xcassets/Wallpapers/Boreal.imageset/Boreal.jpg) center/cover';
   if (id==='custom'){ const c=S.custom; return c.type==='mesh' ? paint('mesh', customMesh(c.colors)) : paint(c.type==='conic'?'angular':c.type, c.type==='conic'?[...c.colors,c.colors[0]]:c.colors, c.angle); }
   if (id==='frosted') return `radial-gradient(at 20% 30%, #6366F1, transparent 60%), radial-gradient(at 80% 70%, #F59E0B, transparent 60%), #E2E8F0`;
   if (id==='upload') return S.uploadUrl ? `url(${S.uploadUrl}) center/cover` : '#888';
@@ -252,13 +298,14 @@ function bgPaint(id){
   if (b.kind==='image'){ const N=title(id); return `url(../ShinyScreenshot/Assets.xcassets/Wallpapers/${N}.imageset/${N}.jpg) center/cover`; }
   return paint(b.kind, b.colors);
 }
-function bgColors(id){ return id==='custom' ? S.custom.colors : id==='frosted' ? SHOT_PALETTE : id==='upload' ? ['808080'] : B[id].colors; }
+function bgColors(id){ if (id==='desktop'||id==='desktopglass') return ['1E3A5F','0B1020']; return id==='custom' ? S.custom.colors : id==='frosted' ? SHOT_PALETTE : id==='upload' ? ['808080'] : B[id].colors; }
 
 const RATIOS = [['auto','Auto',null],['16:9','16:9',16/9],['4:3','4:3',4/3],['1:1','1:1',1],['4:5','4:5',.8],['9:16','9:16',9/16],['1.91:1','Link',1.91],['3:1','Banner',3]];
 const FRAMES = [['none','None'],['mac','macOS'],['browser','Browser'],['glass','Glass'],['outline','Outline'],['device','Device']];
 const SHADOWS = [['none','None'],['soft','Soft'],['float','Float'],['hard','Hard'],['glow','Glow']];
 const TILTS = [['flat','Flat',''],['left','Left','perspective(1600px) rotateY(16deg) rotateX(5deg)'],['right','Right','perspective(1600px) rotateY(-16deg) rotateX(5deg)'],['top','Lean','perspective(1600px) rotateX(20deg)'],['iso','Iso','rotateX(50deg) rotateZ(-32deg) scale(.86)']];
 const PATTERNS = [['none','None'],['dots','Dots'],['grid','Grid'],['lines','Lines'],['noise','Grain']];
+const PATTERNS_E = [...PATTERNS, ['waves','Waves']];
 const HEADINGS = [['off','Off'],['headline','Headline'],['editorial','Editorial'],['poster','Poster'],['caption','Caption']];
 
 /* ---------- state ---------- */
@@ -268,9 +315,12 @@ const S = {
   padding:56, ratio:'auto', pos:'cc', bleed:false,
   frame:'mac', radius:12, shadow:'soft', shadowAmt:.4, tilt:'flat', scale:100,
   heading:'off', eyebrow:'New', title:'Ship faster with Shiny', subtitle:'Capture, mark up and share in one go.', below:false, textColor:'auto',
+  style:'default', inset:0, rotate:0, rx:0, ry:0, canvasRadius:0, bright:100, vfx:'none', light:'none', shapes:'none', layout:'single',
+  redact:false, autoBalance:false, url:'app.shiny.dev', customW:1600, customH:900,
+  watermark:false, wmText:'@shinyshot', wmPos:'br', wmOpacity:.85, wmStyle:'pill', fmt:'PNG', res:'2x', transparent:false,
   favorites:['dusk','aurora','silk'], recents:[], myLooks:[], history:[],
 };
-const U = { A:{open:{bg:true,canvas:true,shot:false,fx:false,text:false}, group:'mesh'}, B:{tab:'bg', look:null}, C:{panel:'bg', q:'', hue:'all', mood:'all'}, D:{} };
+const U = { A:{open:{bg:true,canvas:true,shot:false,fx:false,text:false}, group:'mesh'}, B:{tab:'bg', look:null}, C:{panel:'bg', q:'', hue:'all', mood:'all'}, D:{}, E:{panel:'fill', src:'lib', showSrc:true} };
 let variant = new URLSearchParams(location.search).get('variant') || 'A';
 
 function set(path, v){ const ks=path.split('.'); let o=S; ks.slice(0,-1).forEach(k=>o=o[k]); o[ks.at(-1)] = v; }
@@ -278,19 +328,20 @@ function get(path){ return path.split('.').reduce((o,k)=>o[k], S); }
 function pickBg(id){ S.bg = id; S.recents = [id, ...S.recents.filter(x=>x!==id)].slice(0,10); }
 
 /* ---------- composition ---------- */
-const APP = `<div class="app"><div class="nav"><div class="on">Overview</div><div>Reports</div><div>Customers</div><div>Billing</div><div>Settings</div></div>
-<div class="main"><h4>Revenue</h4><div class="cards"><div class="card">MRR<b>$48.2k</b></div><div class="card">Users<b>12,904</b></div><div class="card">Churn<b>1.8%</b></div></div>
+const APP = `<div class="app"><div class="nav"><div class="on">Overview</div><div>Reports</div><div>Customers</div><div>Billing</div><div>Settings</div><div class="sens" style="margin-top:auto;font-size:10px">jane@acme.co</div></div>
+<div class="main"><div style="display:flex;justify-content:space-between;align-items:center"><h4>Revenue</h4><span class="sens" style="font:10px ui-monospace,Menlo,monospace;color:#64748b">sk_live_51Hq…9fA2</span></div><div class="cards"><div class="card">MRR<b>$48.2k</b></div><div class="card">Users<b>12,904</b></div><div class="card">Churn<b>1.8%</b></div></div>
 <div class="bars">${[40,62,48,75,58,88,70,94,66,80,99,84].map(h=>`<i style="height:${h}%"></i>`).join('')}</div></div></div>`;
 
 function shadowCss(){
   const a = S.shadowAmt, c = hex(bgColors(S.bg)[0]);
-  return {none:'none', soft:`0 24px 60px -18px rgba(0,0,0,${a})`, float:`0 60px 110px -30px rgba(0,0,0,${a*1.3}),0 12px 24px -8px rgba(0,0,0,${a*.6})`,
+  return {none:'none', soft:`0 24px 60px -18px rgba(0,0,0,${a})`, spread:`0 30px 80px -10px rgba(0,0,0,${a})`, hug:`0 2px 4px rgba(0,0,0,${a}),0 6px 14px -4px rgba(0,0,0,${a*.8})`, adaptive:`0 34px 70px -18px ${fromHsl(hsl(c)[0], .6, .22)}`, float:`0 60px 110px -30px rgba(0,0,0,${a*1.3}),0 12px 24px -8px rgba(0,0,0,${a*.6})`,
     hard:`${10+a*20}px ${10+a*20}px 0 rgba(0,0,0,.92)`, glow:`0 0 ${40+a*120}px ${a*20}px ${c}`}[S.shadow];
 }
 function overlays(){
   const a = S.patternAmt, ink = isLight(bgColors(S.bg)) ? '0,0,0' : '255,255,255';
   const p = {dots:`radial-gradient(rgba(${ink},${a}) 1.2px, transparent 1.6px) 0 0/18px 18px`,
     grid:`linear-gradient(rgba(${ink},${a*.6}) 1px,transparent 1px) 0 0/32px 32px, linear-gradient(90deg,rgba(${ink},${a*.6}) 1px,transparent 1px) 0 0/32px 32px`,
+    waves:`repeating-radial-gradient(circle at 0 100%, rgba(${ink},${a*.5}) 0 1.5px, transparent 1.5px 16px)`,
     lines:`repeating-linear-gradient(-45deg, rgba(${ink},${a*.5}) 0 1px, transparent 1px 12px)`,
     noise:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='${a*2.4}'/%3E%3C/svg%3E")`}[S.pattern];
   let h = '';
@@ -308,28 +359,58 @@ function headingHtml(){
 }
 const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+function ratioValue(){
+  if (S.ratio==='custom') return (+S.customW||1)/(+S.customH||1);
+  const p = PLATFORMS.find(x=>x[0]===S.ratio); if (p) return p[2]/p[3];
+  return (RATIOS.find(x=>x[0]===S.ratio)||[,,null])[2];
+}
+function decor(){
+  const [c0,c1] = bgColors(S.bg).map(hex);
+  if (S.shapes==='orbs') return `<div class="ovl" style="inset:auto;width:34%;aspect-ratio:1;border-radius:50%;left:-7%;top:-14%;background:radial-gradient(circle at 32% 30%,#fff,${c0} 38%,${c1||c0});box-shadow:0 30px 60px rgba(0,0,0,.28)"></div><div class="ovl" style="inset:auto;width:18%;aspect-ratio:1;border-radius:50%;right:-3%;bottom:-6%;background:radial-gradient(circle at 32% 30%,#fff,${c1||c0} 45%,${c0})"></div>`;
+  if (S.shapes==='rings') return [60,90,120].map(d=>`<div class="ovl" style="inset:auto;width:${d}%;aspect-ratio:1;border-radius:50%;left:${50-d/2}%;top:50%;transform:translateY(-50%);border:1.5px solid rgba(255,255,255,.28)"></div>`).join('');
+  return '';
+}
+function lightAndVfx(){
+  let h = '';
+  if (S.light==='window') h += `<div class="ovl" style="background:linear-gradient(112deg,transparent 0 22%,rgba(255,255,255,.22) 22% 34%,transparent 34% 39%,rgba(255,255,255,.18) 39% 52%,transparent 52%);filter:blur(10px);mix-blend-mode:soft-light;z-index:2"></div>`;
+  if (S.light==='blinds') h += `<div class="ovl" style="background:repeating-linear-gradient(100deg,rgba(0,0,0,.22) 0 22px,transparent 22px 46px);filter:blur(6px);mix-blend-mode:multiply;z-index:2"></div>`;
+  if (S.vfx==='vhs') h += `<div class="ovl" style="background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px);z-index:2"></div>`;
+  if (S.vfx==='glitch') h += `<div class="ovl" style="background:linear-gradient(transparent 0 31%,rgba(255,0,90,.35) 31% 33%,transparent 33% 62%,rgba(0,255,230,.3) 62% 63.5%,transparent 63.5% 80%,rgba(255,255,255,.25) 80% 81%,transparent 81%);mix-blend-mode:difference;z-index:2"></div>`;
+  return h;
+}
 function renderPreview(){
   const fit = document.getElementById('fit');
-  const [v,h] = S.pos;
-  const p = S.padding, tilt = TILTS.find(t=>t[0]===S.tilt)[2];
-  const bleedPad = S.bleed ? (v==='t' ? `padding-top:0;` : `padding-bottom:0;`) : '';
-  const bleedShot = S.bleed ? (v==='t' ? 'margin-top:-70px;' : 'margin-bottom:-70px;') : '';
-  const frosted = S.bg==='frosted' ? `<div class="bgl" style="display:grid;place-items:center;background:#E2E8F0"><div style="transform:scale(2.4);filter:blur(28px) saturate(1.7)">${APP}</div></div>` : `<div class="bgl" style="background:${bgPaint(S.bg)};filter:blur(${S.soften}px)"></div>`;
-  fit.innerHTML = `<div class="comp" id="comp" style="padding:${p}px;${bleedPad}">${frosted}${overlays()}
-    <div class="content" style="justify-content:${{t:'flex-start',c:'center',b:'flex-end'}[v]};align-items:${{l:'flex-start',c:'center',r:'flex-end'}[h]}">
-      ${S.below?'':headingHtml()}
-      <div class="shot" style="transform:${tilt} scale(${S.scale/100});${bleedShot}">
-        <div class="frame f-${S.frame}" style="--r:${S.radius}px;border-radius:${S.radius}px;box-shadow:${shadowCss()}"><div class="fbar"><i></i><i></i><i></i><b>app.shiny.dev</b></div>${APP}</div>
-      </div>
-      ${S.below?headingHtml():''}
-    </div></div>`;
+  const pos = S.autoBalance ? 'cc' : S.pos, bleed = S.bleed && !S.autoBalance;
+  const [v,h] = pos;
+  const p = S.autoBalance ? 64 : S.padding;
+  const tilt = TILTS.find(t=>t[0]===S.tilt)[2] + ((S.rx||S.ry) ? ` perspective(1600px) rotateX(${S.rx}deg) rotateY(${S.ry}deg)` : '') + ` rotate(${S.rotate}deg) scale(${S.scale/100})`;
+  const bleedPad = bleed ? (v==='t' ? `padding-top:0;` : `padding-bottom:0;`) : '';
+  const bleedShot = bleed ? (v==='t' ? 'margin-top:-70px;' : 'margin-bottom:-70px;') : '';
+  const inset = ['default','outline','border'].includes(S.style) ? S.inset : Math.max(S.inset, 10);
+  const vfxFilter = S.vfx==='vhs' ? 'filter:drop-shadow(2px 0 rgba(255,0,60,.55)) drop-shadow(-2px 0 rgba(0,220,255,.55));' : '';
+  const frameHtml = `<div class="sty st-${S.style}" style="padding:${inset}px;border-radius:${S.radius+inset}px;box-shadow:${shadowCss()}"><div class="frame f-${S.frame}" style="--r:${S.radius}px;border-radius:${S.radius}px"><div class="fbar"><i></i><i></i><i></i><b>${esc(S.url)}</b></div>${APP}</div></div>`;
+  const shot = (t, extra='') => `<div class="shot" style="transform:${t};${bleedShot}${extra}">${frameHtml}</div>`;
+  const shots = S.layout==='duo' ? `<div style="display:flex;align-items:center">${shot(tilt)}${shot(tilt+' translateY(34px) scale(.86)','margin-left:-150px;position:relative')}</div>`
+    : S.layout==='stack' ? `<div style="position:relative;${bleedShot}">${shot(tilt+' translate(-48px,-42px) scale(.9)','position:absolute;inset:0;opacity:.5;margin:0')}${shot(tilt+' translate(-24px,-21px) scale(.95)','position:absolute;inset:0;opacity:.78;margin:0')}${shot(tilt,'position:relative;margin:0')}</div>`
+    : shot(tilt);
+  const blur = S.soften + (S.bg==='desktopglass' ? 36 : 0);
+  const frosted = S.bg==='frosted' ? `<div class="bgl" style="display:grid;place-items:center;background:#E2E8F0"><div style="transform:scale(2.4);filter:blur(28px) saturate(1.7)">${APP}</div></div>` : `<div class="bgl" style="background:${bgPaint(S.bg)};filter:blur(${blur}px) brightness(${S.bright/100}) ${S.bg==='desktopglass'?'saturate(1.6)':''}"></div>`;
+  const wmPos = {tl:'left:18px;top:16px',tr:'right:18px;top:16px',bl:'left:18px;bottom:16px',br:'right:18px;bottom:16px'}[S.wmPos];
+  const wmColor = isLight(bgColors(S.bg)) ? '#0F172A' : '#fff';
+  const wm = S.watermark ? `<div class="wm ${S.wmStyle}" style="${wmPos};opacity:${S.wmOpacity};${S.wmStyle==='pill'?'':'color:'+wmColor}"><i></i>${esc(S.wmText)}</div>` : '';
+  fit.innerHTML = `<div class="comp ${S.redact?'redact':''}" id="comp" style="padding:${p}px;${bleedPad}border-radius:${S.canvasRadius}px">${frosted}${overlays()}${decor()}
+    <div class="content" style="justify-content:${{t:'flex-start',c:'center',b:'flex-end'}[v]};align-items:${{l:'flex-start',c:'center',r:'flex-end'}[h]};${vfxFilter}">
+      ${S.below?'':headingHtml()}${shots}${S.below?headingHtml():''}
+    </div>${lightAndVfx()}${wm}</div>`;
   const comp = document.getElementById('comp');
-  const r = RATIOS.find(x=>x[0]===S.ratio)[2];
+  const r = ratioValue();
   let w = comp.offsetWidth, hh = comp.offsetHeight;
   if (r){ if (w/hh < r) w = hh*r; else hh = w/r; comp.style.width = w+'px'; comp.style.height = hh+'px'; }
+  S._size = [Math.round(w), Math.round(hh)];
   const cv = document.getElementById('canvas'), pad = 48;
   const k = Math.min((cv.clientWidth-pad*2)/w, (cv.clientHeight-140)/hh, 1.25);
   fit.style.transform = `translate(${(cv.clientWidth-w*k)/2}px, ${Math.max(24,(cv.clientHeight-80-hh*k)/2)}px) scale(${k})`;
+  const dm = document.getElementById('dims'); if (dm) dm.textContent = exportDims();
   document.getElementById('state').textContent = JSON.stringify({variant, ...S, uploadUrl: S.uploadUrl?'(blob)':null, ui:U[variant]}, null, 1);
 }
 
@@ -358,8 +439,9 @@ const tile = (id, opts={}) => `<button class="tile ${S.bg===id?'on':''}" data-ac
 const tiles = (ids, cols, opts) => `<div class="grid" style="grid-template-columns:repeat(${cols},1fr);${opts&&opts.name?'row-gap:22px;padding-bottom:6px':''}">${ids.map(i=>tile(i,opts)).join('')}</div>`;
 const ratioIcon = r => { const v = r||1.45, w = v>=1?22:22*v, h = v>=1?22/v:22; return `<span style="display:block;width:${w}px;height:${Math.max(h,6)}px;border:1.6px solid currentColor;border-radius:3px;${r?'':'border-style:dashed'}"></span>`; };
 const visTiles = (k, opts, icon, cols=4) => `<div class="grid" style="grid-template-columns:repeat(${cols},1fr);gap:6px">${opts.map(o=>`<button class="vt ${get(k)===o[0]?'on':''}" data-k="${k}" data-v="${o[0]}"><span class="ico">${icon(o)}</span>${o[1]}</button>`).join('')}</div>`;
-const frameIcon = ([v]) => `<span style="display:block;width:28px;height:20px;border-radius:${v==='device'?6:4}px;background:${v==='glass'?'rgba(255,255,255,.35)':'var(--fill2)'};border:${v==='outline'?'2px solid currentColor':v==='device'?'3px solid #333':v==='glass'?'1px solid rgba(255,255,255,.7)':'0'};${v==='mac'||v==='browser'?'border-top:5px solid currentColor':''};opacity:${v==='none'?.6:1}"></span>`;
-const shadowIcon = ([v]) => `<span style="display:block;width:20px;height:16px;border-radius:4px;background:#fff;box-shadow:${{none:'0 0 0 1px var(--line)',soft:'0 5px 10px -2px rgba(0,0,0,.45)',float:'0 10px 14px -4px rgba(0,0,0,.55)',hard:'4px 4px 0 #000',glow:'0 0 12px 2px #FFD60A'}[v]}"></span>`;
+const frameIcon = ([v]) => v==='arc' ? `<span style="display:block;width:28px;height:20px;border-radius:5px;border:3px solid #c4b5fd;background:var(--fill2)"></span>` : ['macbook','ipad'].includes(v) ? `<span style="display:block;width:${v==='ipad'?24:28}px;height:${v==='ipad'?20:18}px;border-radius:${v==='ipad'?5:3}px;border:3px solid #333;${v==='macbook'?'border-bottom:5px solid #aaa':''}"></span>` : ['macdark','chrome','windows'].includes(v) ? `<span style="display:block;width:28px;height:20px;border-radius:4px;background:var(--fill2);border-top:5px solid ${v==='macdark'?'#333':v==='chrome'?'#bbb':'#888'}"></span>` : frameIcon0([v]);
+const frameIcon0 = ([v]) => `<span style="display:block;width:28px;height:20px;border-radius:${v==='device'?6:4}px;background:${v==='glass'?'rgba(255,255,255,.35)':'var(--fill2)'};border:${v==='outline'?'2px solid currentColor':v==='device'?'3px solid #333':v==='glass'?'1px solid rgba(255,255,255,.7)':'0'};${v==='mac'||v==='browser'?'border-top:5px solid currentColor':''};opacity:${v==='none'?.6:1}"></span>`;
+const shadowIcon = ([v]) => `<span style="display:block;width:20px;height:16px;border-radius:4px;background:#fff;box-shadow:${{none:'0 0 0 1px var(--line)',soft:'0 5px 10px -2px rgba(0,0,0,.45)',float:'0 10px 14px -4px rgba(0,0,0,.55)',hard:'4px 4px 0 #000',glow:'0 0 12px 2px #FFD60A',spread:'0 8px 14px 0 rgba(0,0,0,.4)',hug:'0 1px 3px rgba(0,0,0,.6)',adaptive:'0 8px 12px -3px #6d28d9'}[v]}"></span>`;
 const tiltIcon = ([v,,t]) => `<span style="display:block;width:22px;height:15px;border-radius:3px;background:currentColor;opacity:.75;transform:${t.replace('1600px','60px').replace('scale(.86)','scale(.8)')}"></span>`;
 const posGrid = () => `<div class="pos">${['tl','tc','tr','cl','cc','cr','bl','bc','br'].map(p=>`<button class="${S.pos===p[0]+p[1]?'on':''}" data-k="pos" data-v="${p[0]}${p[1]}" title="${p}"></button>`).join('')}</div>`;
 const textColorRow = () => `<div class="row" style="gap:7px">${['auto','#FFFFFF','#0F172A','#FFD60A','#FF3B30','#0A84FF','#34C759','#BF5AF2'].map(c=>`<button class="dot ${S.textColor===c?'on':''}" data-k="textColor" data-v="${c}" title="${c}" style="background:${c==='auto'?'linear-gradient(135deg,#fff 50%,#0F172A 50%)':c}"></button>`).join('')}</div>`;
@@ -505,8 +587,93 @@ function VariantD(){
   </div>`;
 }
 
+/* ---------- Variant E: Everything from every paid plan ---------- */
+const PLATFORMS = [['x','X post',1600,900],['ig','Instagram',1080,1350],['story','Story',1080,1920],['li','LinkedIn',1200,627],['dribbble','Dribbble',1600,1200],
+  ['phunt','Product Hunt',1270,760],['pin','Pinterest',1000,1500],['appstore','App Store',1290,2796],['og','Open Graph',1200,630],['yt','YouTube',1280,720]];
+const FRAMES_E = [['none','None'],['mac','macOS'],['macdark','macOS dark'],['browser','Safari'],['chrome','Chrome'],['arc','Arc'],['windows','Windows'],['macbook','MacBook'],['device','iPhone'],['ipad','iPad']];
+const STYLES_E = [['default','Default'],['glass-light','Glass'],['glass-dark','Glass dark'],['liquid','Liquid'],['inset-light','Inset'],['inset-dark','Inset dark'],['outline','Outline'],['border','Border']];
+const SHADOWS_E = [['none','None'],['spread','Spread'],['hug','Hug'],['adaptive','Adaptive'],['float','Float'],['hard','Hard'],['glow','Glow']];
+function magicSet(){
+  const [a,b,c] = SHOT_PALETTE, H = x => hsl(x)[0];
+  return [
+    {type:'mesh', colors:[a,b,c], angle:135}, {type:'mesh', colors:[fromHsl(H(a),.8,.82),fromHsl(H(b),.9,.85),'#F8FAFC'], angle:135},
+    {type:'mesh', colors:[fromHsl(H(a),.6,.18),fromHsl(H(b),.8,.35),'#0F172A'], angle:135}, {type:'linear', colors:[a,b], angle:135},
+    {type:'radial', colors:[fromHsl(H(a),.85,.65),fromHsl(H(a),.6,.25),'#0B1020'], angle:0}, {type:'conic', colors:[a,b,fromHsl(H(a)+40,.8,.7)], angle:45},
+    {type:'linear', colors:[fromHsl(H(b),.95,.75),fromHsl(H(b)+25,.9,.6)], angle:160}, {type:'solid', colors:[fromHsl(H(a),.35,.93),a,b], angle:0},
+  ];
+}
+const customPaint = c => c.type==='mesh' ? paint('mesh', customMesh(c.colors)) : paint(c.type==='conic'?'angular':c.type, c.type==='conic'?[...c.colors,c.colors[0]]:c.colors, c.angle);
+function exportDims(){
+  const p = PLATFORMS.find(x=>x[0]===S.ratio); if (p) return `${p[2]} × ${p[3]}`;
+  if (S.ratio==='custom') return `${S.customW} × ${S.customH}`;
+  const k = {'1x':1,'2x':2,'4K':3840/((S._size||[1920])[0])}[S.res], [w,h] = S._size || [0,0];
+  return `${Math.round(w*k)} × ${Math.round(h*k)}`;
+}
+function VariantE(){
+  const u = U.E, src = t => u.showSrc ? `<span class="src">${t}</span>` : '';
+  const grp = (label, from, body) => `<div class="grp"><span class="cap">${label}${src(from)}</span>${body}</div>`;
+  const hv = (row, slider) => `<div class="hv">${row}<div class="rev">${slider}</div></div>`;
+  const looks = [...LOOKS, ...S.myLooks];
+  const rail = [['fill','bg','Fill'],['shot','shadow','Shot'],['frame','frame','Frame'],['canvas','canvas','Canvas'],['fx','fx','Effects'],['text','text','Text'],['brand','star','Brand'],['export','up','Export']];
+  const fillSrc = [['lib','Library'],['magic','Magic'],['gradient','Gradient'],['image','Image']];
+  const pane = {
+    fill: `<div class="seg">${fillSrc.map(([k,l])=>`<button class="${u.src===k?'on':''}" data-ue="src" data-v="${k}">${l}</button>`).join('')}</div>` + ({
+      lib: `${grp('68 backgrounds','search + favourites: new','')}<label class="search" style="display:flex;align-items:center;gap:7px;background:var(--fill);border-radius:10px;padding:0 10px">${ic('search',14)}<input id="cq" placeholder="Search backgrounds" value="${esc(U.C.q)}" style="flex:1;border:0;outline:0;background:none;padding:8px 0"></label>
+        <div class="row" style="gap:6px">${HUES.map(([k,l,c])=>`<button class="dot ${U.C.hue===k?'on':''}" data-uc="hue" data-v="${k}" title="${l}" style="background:${c}"></button>`).join('')}<span style="flex:1"></span>${['all','light','dark'].map(m=>`<button class="chip ${U.C.mood===m?'on':''}" data-uc="mood" data-v="${m}">${m[0].toUpperCase()+m.slice(1)}</button>`).join('')}</div>
+        <div id="clib" style="display:flex;flex-direction:column;gap:18px">${cLibrary()}</div>`,
+      magic: grp('Built from your screenshot','Shots.so Magic · Xnapper', `<div class="grid" style="grid-template-columns:repeat(4,1fr)">${magicSet().map((c,i)=>`<button class="tile ${S.bg==='custom'&&JSON.stringify(S.custom.colors)===JSON.stringify(c.colors)?'on':''}" data-act="magic" data-v="${i}" style="background:${customPaint(c)}"></button>`).join('')}</div>
+        <div class="row" style="gap:6px">${SHOT_PALETTE.map(c=>`<span class="dot" style="background:${c}"></span>`).join('')}<span class="lbl">Colours found in the shot</span></div>`),
+      gradient: grp('Your own gradient','ScreenSnap · Pika · Screen Studio', `${visTiles('custom.type', [['mesh','Mesh'],['linear','Linear'],['radial','Glow'],['conic','Conic'],['solid','Solid']], ([v])=>`<span style="display:block;width:26px;height:18px;border-radius:5px;background:${customPaint({...S.custom,type:v})}"></span>`, 5)}${customEditor()}`),
+      image: grp('Images','CleanShot · Shottr · Shots.so', `<div class="grid" style="grid-template-columns:repeat(3,1fr);row-gap:22px">
+          ${tile('desktop',{name:true,star:false})}${tile('desktopglass',{name:true,star:false})}
+          <label class="tile ${S.bg==='upload'?'on':''}" style="cursor:pointer;display:grid;place-items:center;background:${S.uploadUrl?bgPaint('upload'):'var(--fill)'};color:var(--fg2)">${S.uploadUrl?'':ic('up')}<input type="file" accept="image/*" data-act="upload" hidden><span class="nm">Your image</span></label>
+          ${WALL.map(w=>tile(w,{name:true})).join('')}${tile('clear',{name:true,star:false})}</div>
+        <div class="lbl">Photo search (Unsplash, Shots.so) needs an API key, so it isn't mocked here.</div>`),
+    })[u.src],
+    shot: `${grp('Style','Shots.so Pro', visTiles('style', STYLES_E, ([v])=>`<span class="st-${v}" style="display:block;width:24px;height:17px;border-radius:5px;padding:3px;${v==='default'?'background:var(--fill2)':''}"><span style="display:block;width:100%;height:100%;border-radius:2px;background:${v.includes('dark')?'#555':'#fff'}"></span></span>`, 4))}
+      ${grp('Inset','ScreenSnap · Xnapper · Pika', slider('inset','Inset',0,40,1))}
+      ${grp('Corners','ScreenSnap · Shots.so', hv(seg('radius',[[0,'Sharp'],[12,'Curved'],[24,'Round']]), slider('radius','Radius',0,40,1)))}
+      ${grp('Shadow','Shots.so · ScreenSnap', hv(visTiles('shadow', SHADOWS_E, shadowIcon, 4), slider('shadowAmt','Opacity',0,1,.01,v=>Math.round(v*100)+'%')))}
+      ${grp('Layout','Shots.so multi-item', visTiles('layout', [['single','Single'],['duo','Duo'],['stack','Stack']], ([v])=>`<span style="display:flex;gap:2px;align-items:flex-end">${'<i style="display:block;width:12px;height:9px;border-radius:2px;background:currentColor"></i>'.repeat(v==='single'?1:v==='duo'?2:3)}</span>`, 3))}
+      ${grp('Privacy','Xnapper auto-redact', toggle('redact','Hide emails and keys'))}`,
+    frame: `${grp('Window or device','Shots.so · Pika Pro', visTiles('frame', FRAMES_E, frameIcon, 4))}
+      ${grp('Address bar','Pika', `<input class="field" data-k="url" value="${esc(S.url)}" placeholder="yourapp.com">`)}`,
+    canvas: `${grp('Platform sizes','Pika · Xnapper · Shots.so', `<div class="grid" style="grid-template-columns:repeat(4,1fr);gap:6px"><button class="vt ${S.ratio==='auto'?'on':''}" data-k="ratio" data-v="auto"><span class="ico">${ratioIcon(null)}</span>Auto</button>${PLATFORMS.map(([k,l,w,h])=>`<button class="vt ${S.ratio===k?'on':''}" data-k="ratio" data-v="${k}"><span class="ico">${ratioIcon(w/h)}</span>${l}<small>${w}×${h}</small></button>`).join('')}<button class="vt ${S.ratio==='custom'?'on':''}" data-k="ratio" data-v="custom"><span class="ico">${ic('plus',14)}</span>Custom</button></div>
+        ${S.ratio==='custom'?`<div class="row" style="gap:6px"><input class="field" type="number" data-k="customW" value="${S.customW}"><span class="lbl">×</span><input class="field" type="number" data-k="customH" value="${S.customH}"></div>`:''}
+        <div class="seg">${RATIOS.slice(1,6).map(([k,l])=>`<button class="${S.ratio===k?'on':''}" data-k="ratio" data-v="${k}">${l}</button>`).join('')}</div>`)}
+      ${grp('Balance','CleanShot · Xnapper', toggle('autoBalance','Auto balance'))}
+      ${S.autoBalance?'':grp('Space and position','CleanShot · Pika', `${slider('padding','Padding',0,200,1)}<div class="row" style="justify-content:space-between"><span class="lbl">Position</span>${posGrid()}</div>${toggle('bleed','Bleed off the edge')}`)}
+      ${grp('Transform','Pika Pro · Shots.so 3D', `${slider('scale','Zoom',50,130,1,v=>v+'%')}${slider('rotate','Rotate',-20,20,1,v=>v+'°')}${visTiles('tilt', TILTS, tiltIcon, 5)}${slider('rx','Tilt X',-35,35,1,v=>v+'°')}${slider('ry','Tilt Y',-35,35,1,v=>v+'°')}`)}
+      ${grp('Canvas corners','Pika', slider('canvasRadius','Corners',0,48,1))}`,
+    fx: `${grp('Background','ScreenSnap · Xnapper', `${slider('soften','Blur',0,40,1,v=>v+'px')}${slider('grain','Noise',0,100,1)}${slider('bright','Brightness',40,140,1,v=>v+'%')}`)}
+      ${grp('Pattern','Pika', hv(seg('pattern',PATTERNS_E), slider('patternAmt','Amount',0,.6,.01,v=>Math.round(v*100/.6)+'%')))}
+      ${grp('Light','Shots.so scenes', seg('light',[['none','None'],['window','Window'],['blinds','Blinds']]))}
+      ${grp('Shapes','Shots.so 3D shapes', seg('shapes',[['none','None'],['orbs','Orbs'],['rings','Rings']]))}
+      ${grp('VFX','Shots.so', seg('vfx',[['none','None'],['vhs','VHS'],['glitch','Glitch']]))}
+      ${toggle('vignette','Vignette')}`,
+    text: grp('Title','Pika Pro (Shiny has this already)', `${visTiles('heading', HEADINGS, ([v])=>`<span style="font:${v==='editorial'?'500 15px Georgia':v==='poster'?'900 13px var(--ui)':v==='caption'?'600 10px var(--ui)':'700 14px var(--ui)'}">${v==='off'?'–':v==='poster'?'AA':'Aa'}</span>`, 5)}${S.heading!=='off'?textFields()+seg('below',[[false,'Above'],[true,'Below']])+textColorRow():''}`),
+    brand: grp('Watermark','Pika · Xnapper · Shots.so Pro', `${toggle('watermark','Show watermark')}${S.watermark?`<input class="field" data-k="wmText" value="${esc(S.wmText)}" placeholder="@handle or yoursite.com">
+        <div class="row" style="justify-content:space-between">${seg('wmStyle',[['pill','Pill'],['plain','Plain']])}<div class="pos" style="grid-template-columns:repeat(2,18px)">${['tl','tr','bl','br'].map(p=>`<button class="${S.wmPos===p?'on':''}" data-k="wmPos" data-v="${p}"></button>`).join('')}</div></div>
+        ${slider('wmOpacity','Opacity',.2,1,.01,v=>Math.round(v*100)+'%')}`:''}`),
+    export: `${grp('Format','Pika Pro (2x, 4K)', `${seg('fmt',[['PNG','PNG'],['JPG','JPG'],['WebP','WebP']])}${seg('res',[['1x','1x'],['2x','2x'],['4K','4K']])}${toggle('transparent','Export without background')}
+        <div class="row" style="justify-content:space-between"><span class="lbl">Size</span><span class="dims" id="dims">${exportDims()}</span></div>`)}
+      <div class="row" style="gap:6px"><button class="btn acc" data-act="export" data-v="Copied">${ic('copy',13)} Copy</button><button class="btn" data-act="export" data-v="Saved to Desktop">${ic('up',13)} Save</button><button class="btn" data-act="export" data-v="Pinned">Pin</button></div>`,
+  }[u.panel];
+  return `<div class="E glass">
+    <div class="top">
+      <div class="row"><span class="h">Style</span><span style="flex:1"></span>
+        <button class="chip ${u.showSrc?'on':''}" data-ue="showSrc" data-v="${!u.showSrc}" title="Show which app each control comes from">Sources</button>
+        <button class="btn" data-act="magicpreset">${ic('dice',13)} Magic</button><button class="btn acc" data-act="savelook">${ic('plus',13)} Save</button></div>
+      <div class="strip" data-scroll="e-strip">${looks.map(l=>`<button class="look ${U.B.look===l[0]?'on':''}" data-act="look" data-v="${l[0]}">${miniLook(l)}<div class="lname">${l[1]}</div></button>`).join('')}</div>
+    </div>
+    <div class="main">
+      <div class="rail">${rail.map(([k,i,l])=>`<button class="${u.panel===k?'on':''}" data-ue="panel" data-v="${k}">${ic(i,17)}${l}</button>`).join('')}</div>
+      <div class="pane scroll" data-scroll="e-${u.panel}">${pane}</div>
+    </div></div>`;
+}
+
 /* ---------- wiring ---------- */
-const VARIANTS = {A:['Inspector',VariantA], B:['Looks first',VariantB], C:['Rail + library',VariantC], D:['Generator',VariantD]};
+const VARIANTS = {A:['Inspector',VariantA], B:['Looks first',VariantB], C:['Rail + library',VariantC], D:['Generator',VariantD], E:['Everything',VariantE]};
 function renderSide(){
   const side = document.getElementById('side'), keep = {};
   side.querySelectorAll('[data-scroll]').forEach(e => keep[e.dataset.scroll] = e.scrollTop);
@@ -520,7 +687,7 @@ document.getElementById('dock').innerHTML = ['sel','pen','arrow','text','bg','co
 
 const parse = v => v==='true'?true : v==='false'?false : v!=='' && !isNaN(v) && !/^#/.test(v) ? +v : v;
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-act],[data-k],[data-ua],[data-ug],[data-ub],[data-uc],[data-ucp],[data-ud],[data-sw]');
+  const t = e.target.closest('[data-act],[data-k],[data-ua],[data-ug],[data-ub],[data-uc],[data-ucp],[data-ud],[data-ue],[data-sw]');
   if (!t || t.matches('input')) return;
   const d = t.dataset;
   if (d.sw){ const ks = Object.keys(VARIANTS); go(ks[(ks.indexOf(variant)+ +d.sw+ks.length)%ks.length]); return; }
@@ -541,6 +708,11 @@ document.addEventListener('click', e => {
   else if (d.ucp){ U.C.panel = U.C.panel===d.ucp ? null : d.ucp; }
   else if (d.ud){ U.D.harmony = d.v==='any' ? null : d.v; }
   else if (d.k==='__src'){ U.D.src = d.v; }
+  else if (d.ue){ U.E[d.ue] = parse(d.v); }
+  else if (d.act==='magic'){ S.custom = JSON.parse(JSON.stringify(magicSet()[+d.v])); S.bg = 'custom'; }
+  else if (d.act==='magicpreset'){ const l = LOOKS[Math.floor(Math.random()*LOOKS.length)]; Object.assign(S, JSON.parse(JSON.stringify(l[3])));
+    const m = magicSet(); S.custom = JSON.parse(JSON.stringify(m[Math.floor(Math.random()*m.length)])); S.bg = 'custom'; U.B.look = null; }
+  else if (d.act==='export'){ const t = document.getElementById('toast'); t.textContent = `${d.v} · ${S.fmt} ${S.res} · ${exportDims()}`; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 1600); }
   else if (d.k){ set(d.k, parse(d.v)); if (d.k.startsWith('custom')) S.bg = 'custom'; if (variant==='B') U.B.look = null; }
   renderAll();
 });
@@ -549,7 +721,7 @@ document.addEventListener('input', e => {
   if (t.id==='cq'){ U.C.q = t.value; document.getElementById('clib').innerHTML = cLibrary(); return; }
   if (!t.dataset.k) return;
   const k = t.dataset.k;
-  set(k, t.type==='range' ? +t.value : t.value);
+  set(k, t.type==='range'||t.type==='number' ? +t.value : t.value);
   if (k.startsWith('custom')) S.bg = 'custom';
   if (t.type==='range') t.nextElementSibling.textContent = FMT[k](+t.value);
   renderPreview();
