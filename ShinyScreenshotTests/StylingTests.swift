@@ -90,6 +90,21 @@ struct StylingTests {
         #expect(!s.isOpaque)
     }
 
+    @Test func saveWritesTheChosenFormatAtTheChosenSize() throws {
+        let s = styled()
+        s.style.format = .jpeg
+        s.style.size = .x2
+        let shot = try #require(Shot(s))
+        #expect(shot.size == s.canvas, "pastes at the canvas size")
+        #expect(CGFloat(shot.cgImage.width) == s.canvas.width * 2)
+        let dir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = try #require(shot.save(to: dir))
+        #expect(url.pathExtension == "jpg")
+        #expect(NSImage(contentsOf: url) != nil)
+    }
+
     @Test func sensitiveTextIsFound() {
         func found(_ t: String) -> [String] { sensitiveRanges(in: t).map { String(t[$0]) } }
         #expect(found("mail jane@acme.co now") == ["jane@acme.co"])
