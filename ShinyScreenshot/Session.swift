@@ -93,6 +93,9 @@ final class Session {
     var labelSize: CGFloat = 15 { didSet { editLabel { $0.size = labelSize } } }
     var labelFilled = true { didSet { editLabel { $0.filled = labelFilled } } }
     var style = Style()
+    /// The background panel's open section.
+    var panelSection = StylePanel.Section.fill
+    var fillTab = FillTab.library
     var editingText: UUID?
     var draft = ""
     var cursor: CGPoint?
