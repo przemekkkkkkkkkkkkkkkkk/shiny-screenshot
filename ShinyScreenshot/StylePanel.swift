@@ -4,13 +4,11 @@ import SwiftUI
 struct StylePanel: View {
     @Bindable var s: Session
     let act: (OverlayAction) -> Void
-    @State private var section: Section
     @State private var presets = Preset.saved
-
-    init(s: Session, act: @escaping (OverlayAction) -> Void, section: Section = .fill) {
-        self.s = s
-        self.act = act
-        _section = State(initialValue: section)
+    /// Kept on the session, so the panel reopens where it was while the overlay is up.
+    private var section: Section {
+        get { s.panelSection }
+        nonmutating set { s.panelSection = newValue }
     }
 
     enum Section: String, CaseIterable, Identifiable {
@@ -363,20 +361,23 @@ struct StylePanel: View {
 private struct FillPane: View {
     @Bindable var s: Session
     let act: (OverlayAction) -> Void
-    @State private var source = Source.library
     @State private var query = ""
     @State private var hue: HueFamily?
     @State private var mood: Bool?
     @AppStorage("favoriteBackdrops") private var favoritesRaw = "dusk,aurora,silk"
     @AppStorage("recentBackdrops") private var recentsRaw = ""
 
-    enum Source: String, CaseIterable { case library = "Library", magic = "Magic", gradient = "Gradient", image = "Image" }
+    typealias Source = FillTab
+    private var source: FillTab {
+        get { s.fillTab }
+        nonmutating set { s.fillTab = newValue }
+    }
 
     private var favorites: [Backdrop] { favoritesRaw.split(separator: ",").compactMap { Backdrop(rawValue: String($0)) } }
     private var recents: [Backdrop] { recentsRaw.split(separator: ",").compactMap { Backdrop(rawValue: String($0)) } }
 
     var body: some View {
-        Chips(options: Source.allCases, selection: $source, label: \.rawValue, hint: { "Backgrounds: \($0.rawValue)" })
+        Chips(options: Source.allCases, selection: Binding { source } set: { source = $0 }, label: \.rawValue, hint: { "Backgrounds: \($0.rawValue)" })
         switch source {
         case .library: library
         case .magic: magic
@@ -559,6 +560,8 @@ private struct FillPane: View {
         .buttonStyle(.plain)
     }
 }
+
+enum FillTab: String, CaseIterable { case library = "Library", magic = "Magic", gradient = "Gradient", image = "Image" }
 
 enum HueFamily: String, CaseIterable, Identifiable {
     case red = "Red", orange = "Orange", yellow = "Yellow", green = "Green", blue = "Blue", purple = "Purple", neutral = "Neutral"
