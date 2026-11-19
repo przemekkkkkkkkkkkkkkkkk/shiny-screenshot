@@ -296,23 +296,7 @@ private struct BackgroundPanel: View {
                 }
                 .controlSize(.small)
             }
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 4), spacing: 4) {
-                ForEach(Backdrop.allCases) { b in
-                    Button { s.style.backdrop = b } label: {
-                        b.tile
-                            .frame(height: 36)
-                            .clipShape(RoundedRectangle(cornerRadius: 7))
-                            .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(.white.opacity(0.15)))
-                            .padding(3)
-                            .overlay(RoundedRectangle(cornerRadius: 10)
-                                .strokeBorder(s.style.backdrop == b ? Color.mark : .clear, lineWidth: 2))
-                    }
-                    .buttonStyle(.plain)
-                    .help(b.name)
-                }
-            }
-            // The selection ring sits in each tile's padding; pull the grid out so the swatches line up with the rest.
-            .padding(.horizontal, -3)
+            BackdropGallery(selection: $s.style.backdrop)
             Divider()
             LabeledSlider(label: "Padding", value: $s.style.padding, range: 0...160, text: "\(Int(s.style.padding))")
             LabeledSlider(label: "Roundness", value: $s.style.radius, range: 0...32, text: "\(Int(s.style.radius))")
@@ -350,6 +334,68 @@ private struct BackgroundPanel: View {
             }
         }
         .padding(14)
+    }
+}
+
+/// Every background, in sections; the chips above jump to one.
+private struct BackdropGallery: View {
+    @Binding var selection: Backdrop
+
+    var body: some View {
+        ScrollViewReader { proxy in
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 4) {
+                    ForEach(Backdrop.Group.allCases) { g in
+                        let on = selection.group == g
+                        Button { withAnimation { proxy.scrollTo(g, anchor: .top) } } label: {
+                            Text(g.rawValue)
+                                .font(.system(size: 10.5, weight: .medium))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                                .foregroundStyle(on ? .primary : .secondary)
+                                .frame(maxWidth: .infinity, minHeight: 22)
+                                .background(.white.opacity(on ? 0.14 : 0.06), in: RoundedRectangle(cornerRadius: 6))
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help("\(g.backdrops.count) \(g.rawValue.lowercased())")
+                    }
+                }
+                ScrollView {
+                    // Not lazy: 67 small tiles, and a lazy stack misjudges section heights when jumping to one.
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(Backdrop.Group.allCases) { g in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(g.rawValue).font(.system(size: 10.5, weight: .medium)).foregroundStyle(.tertiary)
+                                    .padding(.leading, 3)
+                                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 5), spacing: 0) {
+                                    ForEach(g.backdrops) { b in tile(b) }
+                                }
+                            }
+                            .id(g)
+                        }
+                    }
+                }
+                .scrollIndicators(.automatic)
+                .frame(height: 190)
+                // The selection ring sits in each tile's padding; pull the grid out so the swatches line up with the rest.
+                .padding(.horizontal, -3)
+                .onAppear { proxy.scrollTo(selection.group, anchor: .top) }
+            }
+        }
+    }
+
+    private func tile(_ b: Backdrop) -> some View {
+        Button { selection = b } label: {
+            b.tile
+                .frame(height: 30)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.white.opacity(0.15)))
+                .padding(3)
+                .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(selection == b ? Color.mark : .clear, lineWidth: 2))
+        }
+        .buttonStyle(.plain)
+        .help(b.name)
     }
 }
 
