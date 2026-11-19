@@ -23,7 +23,7 @@ struct StylePanel: View {
             case .frame: "macwindow"
             case .canvas: "aspectratio"
             case .effects: "sparkles"
-            case .text: "textformat"
+            case .text: "character.textbox"
             case .brand: "seal"
             case .export: "square.and.arrow.up"
             }
