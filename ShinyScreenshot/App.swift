@@ -48,6 +48,8 @@ private struct MenuContent: View {
             Button("Clear") { shiny.recent = [] }
         }
         .disabled(shiny.recent.isEmpty)
+        Button("Library…") { shiny.showLibrary() }
+            .keyboardShortcut("l")
         Divider()
         Button("Settings…") { Shiny.shared.showSettings() }
             .keyboardShortcut(",")
@@ -82,7 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 enum OverlayAction { case copy, save, pin, scroll, cancel }
 
-enum CaptureMode { case area, window, again, fullScreen, scrolling }
+enum CaptureMode: String, Codable { case area, window, again, fullScreen, scrolling }
 
 /// Owns the capture overlay and the floating cards and pins it leaves behind.
 @Observable
@@ -100,6 +102,7 @@ final class Shiny {
     private var resignObserver: NSObjectProtocol?
     private var panels: [NSWindow] = []
     private var settings: NSWindow?
+    private var library: NSWindow?
     private var hotkeys: [HotkeyAction: Hotkey] = [:]
     /// From the hotkey until the overlay closes (or an alert is dismissed), so a second press can't start a second capture.
     private var busy = false
@@ -110,10 +113,13 @@ final class Shiny {
         guard let screen = Self.screenUnderMouse, let id = screen.displayID else { return }
         if delay > 0 { return countdown(delay, on: screen) { [weak self] in self?.capture(mode) } }
         let scale = screen.backingScaleFactor
+        let app = NSWorkspace.shared.frontmostApplication?.localizedName
         busy = true
         Task {
             do {
                 let session = Session(try await Capture.freeze(displayID: id, scale: scale), displayID: id)
+                session.mode = mode == .again ? .area : mode
+                session.app = app
                 switch mode {
                 case .area: break
                 case .window: session.windowsOnly = true
@@ -185,6 +191,33 @@ final class Shiny {
     private func remember(_ shot: Shot) {
         let older = recent.filter { $0.session == nil || $0.session !== shot.session }.prefix(4).map(\.withoutSession)
         recent = [shot] + older
+        // A capture reopened from the Library goes back into its entry.
+        if UserDefaults.standard.bool(forKey: "keepInLibrary") || Library.shared.contains(shot.id) {
+            Task { await Library.shared.add(shot) }
+        }
+    }
+
+    /// Reopens a Library capture on the screen under the mouse, every annotation editable again.
+    func edit(_ item: LibraryItem) {
+        guard !busy, overlay == nil, let screen = Self.screenUnderMouse, let id = screen.displayID,
+              let s = Library.shared.session(item, displayID: id, fit: screen.frame.size) else { return }
+        open(s)
+    }
+
+    func showLibrary() {
+        if library?.isVisible != true {
+            let window = NSWindow(contentViewController: NSHostingController(rootView: LibraryView()))
+            window.title = "Library"
+            window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+            window.setContentSize(CGSize(width: 900, height: 620))
+            window.isReleasedWhenClosed = false
+            window.center()
+            // Puts it back where it was last time, if it was moved.
+            window.setFrameAutosaveName("Library")
+            library = window
+        }
+        NSApp.activate()
+        library?.makeKeyAndOrderFront(nil)
     }
 
     func showSettings() {
@@ -313,7 +346,9 @@ final class Shiny {
             end()
             Task {
                 guard let image = await rec.finish() else { return }
-                let shot = Shot(image, scale: s.scale, displayID: s.displayID)
+                var shot = Shot(image, scale: s.scale, displayID: s.displayID)
+                shot.kind = .scrolling
+                shot.app = s.app
                 self.remember(shot)
                 shot.copy()
                 self.showCard(shot, title: "Copied to clipboard")
@@ -343,15 +378,18 @@ final class Shiny {
         guard let screen = shot.screen else { return }
         // Weak: the panel's view holds this closure, and `panels` keeps the panel alive while it is shown.
         weak var panel: NSPanel?
-        let card = CardView(title: title, image: shot.image, canEdit: shot.editable, drag: shot.dragItem) { [weak self] action in
+        let card = CardView(title: title, image: shot.image, inLibrary: Library.shared.contains(shot.id),
+                            drag: shot.dragItem) { [weak self] action in
             guard let self, let panel else { return }
+            // Stays open: the card's button turns into a check.
+            if action == .library { Task { await Library.shared.add(shot) }; return }
             self.close(panel)
             switch action {
             case .copy: shot.copy()
             case .save: self.showSaved(shot)
             case .pin: self.pin(shot)
-            case .edit: if let s = shot.session { self.open(s) }
-            case .dismiss: break
+            case .edit: self.edit(shot)
+            case .dismiss, .library: break
             }
         }
         let p = makePanel(card)
@@ -360,7 +398,18 @@ final class Shiny {
         p.orderFrontRegardless()
     }
 
-    private func pin(_ shot: Shot) {
+    /// Opens a capture to mark up again: its own session if it still has one, else the image itself, on the screen under the mouse.
+    private func edit(_ shot: Shot) {
+        if let s = shot.session { return open(s) }
+        guard let screen = Self.screenUnderMouse, let id = screen.displayID else { return }
+        let s = Library.flatSession(shot.cgImage, scale: shot.scale, displayID: id, fit: screen.frame.size)
+        s.shotID = shot.id
+        s.mode = shot.kind
+        s.app = shot.app
+        open(s)
+    }
+
+    func pin(_ shot: Shot) {
         guard let screen = shot.screen else { return }
         let k = min(1, 720 / shot.size.width, 520 / shot.size.height)
         let size = CGSize(width: shot.size.width * k, height: shot.size.height * k)
@@ -445,11 +494,22 @@ struct Shot {
     /// Nil for scrolling captures (taller than the overlay can show) and older Recent entries.
     private(set) var session: Session?
     private(set) var date = Date.now
+    /// Shared by its copies and by every export of the same session, so the Library keeps a capture once.
+    private(set) var id = UUID()
+    var kind = CaptureMode.area
+    /// The app in front when the capture started.
+    var app: String?
+    /// The background's name, when it had one.
+    var backdrop: String?
 
     init?(_ s: Session) {
         guard let cg = s.render() else { return nil }
-        self.init(cg, scale: s.scale, displayID: s.displayID, opaque: s.isOpaque)
+        self.init(cg, scale: s.pasteScale ?? s.scale, displayID: s.displayID, opaque: s.isOpaque)
         session = s
+        id = s.shotID
+        kind = s.mode
+        app = s.app
+        backdrop = s.style.enabled ? s.style.backdrop.name : nil
     }
 
     init(_ cgImage: CGImage, scale: CGFloat, displayID: CGDirectDisplayID, opaque: Bool = true) {
@@ -459,7 +519,6 @@ struct Shot {
         self.opaque = opaque
     }
 
-    var editable: Bool { session != nil }
     var screen: NSScreen? { NSScreen.screens.first { $0.displayID == displayID } }
 
     /// The same capture without its session, so it no longer holds a whole screen in memory.
