@@ -48,7 +48,7 @@ struct AssetPreviews {
             }
         }
         precondition(NSImage(named: "MenuBarIcon")?.isTemplate == true)
-        print("PASS: 16 backdrops at fixed 56×38 pt tile / export dimensions; four wallpapers resolve; menu image is template.")
+        print("PASS: \(Backdrop.allCases.count) backdrops at fixed 56×38 pt tile / export dimensions; four wallpapers resolve; menu image is template.")
     }
 
     @MainActor static func save<V: View>(_ view: V, to url: URL) throws {

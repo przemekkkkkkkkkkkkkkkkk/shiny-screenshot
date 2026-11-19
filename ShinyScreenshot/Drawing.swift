@@ -12,7 +12,7 @@ extension Color {
 
 let palette: [Color] = [0xFF3B30, 0xFF9F0A, 0xFFD60A, 0x34C759, 0x0A84FF, 0xBF5AF2].map(Color.init(hex:))
 
-enum Ratio: String, CaseIterable, Identifiable {
+enum Ratio: String, CaseIterable, Identifiable, Codable {
     case auto = "Auto", wide = "16:9", portrait = "4:5", square = "1:1", link = "1.91:1"
 
     var id: Self { self }
@@ -38,7 +38,7 @@ enum Ratio: String, CaseIterable, Identifiable {
     }
 }
 
-struct Style {
+struct Style: Codable {
     var enabled = false
     var backdrop = Backdrop.peach
     var padding: CGFloat = 48
@@ -69,7 +69,7 @@ struct Style {
 }
 
 /// System designs first, then families that ship with macOS.
-enum TextFont: String, CaseIterable, Identifiable {
+enum TextFont: String, CaseIterable, Identifiable, Codable {
     case sans = "Sans", rounded = "Rounded", serif = "Serif", mono = "Mono"
     case avenir = "Avenir Next", futura = "Futura", didot = "Didot", georgia = "Georgia"
 
@@ -100,7 +100,7 @@ enum TextFont: String, CaseIterable, Identifiable {
     }
 }
 
-enum TextWeight: String, CaseIterable, Identifiable {
+enum TextWeight: String, CaseIterable, Identifiable, Codable {
     case light = "Light", regular = "Regular", bold = "Bold", black = "Black"
 
     var id: Self { self }
@@ -116,7 +116,7 @@ enum TextWeight: String, CaseIterable, Identifiable {
     }
 }
 
-enum TextAlign: String, CaseIterable, Identifiable {
+enum TextAlign: String, CaseIterable, Identifiable, Codable {
     case leading = "Left", center = "Centre", trailing = "Right"
 
     var id: Self { self }
@@ -143,7 +143,7 @@ enum TextAlign: String, CaseIterable, Identifiable {
 let textColors = [0xFFFFFF, 0x0F172A] + [0xFF3B30, 0xFF9F0A, 0xFFD60A, 0x34C759, 0x0A84FF, 0xBF5AF2]
 
 /// Title and description layouts, after App Store screenshots, editorial cards and captions.
-enum Heading: String, CaseIterable, Identifiable {
+enum Heading: String, CaseIterable, Identifiable, Codable {
     case headline = "Headline", editorial = "Editorial", poster = "Poster", caption = "Caption"
 
     var id: Self { self }
@@ -230,32 +230,129 @@ private struct HeadingView: View {
     }
 }
 
-enum Backdrop: String, CaseIterable, Identifiable {
+/// The background gallery, in the order the picker shows it.
+enum Backdrop: String, CaseIterable, Identifiable, Codable {
+    // Wallpapers
     case silk, prism, solstice, boreal
-    case aurora, peach, lagoon, dusk, matcha, holo, ember, glacier, graphite, paper, ink, clear
+    // Mesh
+    case aurora, peach, lagoon, dusk, matcha, holo, ember, graphite
+    case sorbet, nebula, tropic, berry, ocean, sunrise, lavender, mint, cosmos, coral
+    case forest, candy, volcano, arctic, midnight, rosegold, neon
+    // Gradients
+    case glacier, azure, flamingo, lime, royal, sunset, citrus, grape, steel, seafoam, blush, copper, emerald, cherry, sand, twilight
+    case spectrum, pastel
+    // Glow
+    case nova, bloom, amber, firefly, pearl, halo
+    // Solid
+    case paper, ink, snow, onyx, slate, cream, navy, pine, wine, lilac, butter, tangerine, rose, sun, clear
+
+    enum Group: String, CaseIterable, Identifiable {
+        case wallpaper = "Wallpapers", mesh = "Mesh", gradient = "Gradients", glow = "Glow", solid = "Solid"
+        var id: Self { self }
+        var backdrops: [Backdrop] { Backdrop.allCases.filter { $0.group == self } }
+    }
+
+    private enum Paint {
+        case image, mesh([Int]), linear([Int]), angular([Int]), radial([Int]), solid(Int), clear
+    }
 
     var id: Self { self }
-    var name: String { self == .clear ? "Transparent" : rawValue.capitalized }
-    /// Takes dark text; everything else takes white.
-    var isLight: Bool { [.prism, .peach, .matcha, .holo, .glacier, .paper, .clear].contains(self) }
+    var name: String { self == .clear ? "Transparent" : self == .rosegold ? "Rose Gold" : rawValue.capitalized }
+
+    var group: Group {
+        switch paint {
+        case .image: .wallpaper
+        case .mesh: .mesh
+        case .linear, .angular: .gradient
+        case .radial: .glow
+        case .solid, .clear: .solid
+        }
+    }
+
+    /// Takes dark text; everything else takes white. Judged by the colours' mean luminance.
+    var isLight: Bool {
+        let colors: [Int] = switch paint {
+        case .image: self == .prism ? [0xFFFFFF] : [0]
+        case .clear: [0xFFFFFF]
+        case let .solid(c): [c]
+        case let .mesh(c), let .linear(c), let .angular(c), let .radial(c): c
+        }
+        return colors.map(luminance).reduce(0, +) / Double(colors.count) > 0.45
+    }
+
+    private var paint: Paint {
+        switch self {
+        case .silk, .prism, .solstice, .boreal: .image
+        case .aurora: .mesh([0x6EE7B7, 0x4F46E5, 0x818CF8, 0x22D3EE, 0x312E81, 0xA78BFA, 0xC084FC, 0x22D3EE, 0x312E81])
+        case .peach: .mesh([0xFDE68A, 0xFECDD3, 0xFDA4AF, 0xFDBA74, 0xFBCFE8, 0xF9A8D4, 0xFDBA74, 0xF472B6, 0xF472B6])
+        case .lagoon: .mesh([0x67E8F9, 0x38BDF8, 0x3B82F6, 0x22D3EE, 0x2563EB, 0x1D4ED8, 0x06B6D4, 0x0EA5E9, 0x1E40AF])
+        case .dusk: .mesh([0x2E1065, 0x4C1D95, 0x7C3AED, 0x7C3AED, 0xC026D3, 0xF97316, 0xF97316, 0xFB923C, 0xFDE047])
+        case .matcha: .mesh([0xECFCCB, 0xD9F99D, 0xBEF264, 0xD9F99D, 0xA3E635, 0x86EFAC, 0xBEF264, 0x4ADE80, 0x22C55E])
+        case .holo: .mesh([0xF5D0FE, 0xA5B4FC, 0x67E8F9, 0xFDE68A, 0xF0ABFC, 0xA5F3FC, 0xD9F99D, 0xFBCFE8, 0xC4B5FD])
+        case .ember: .mesh([0x1C0A05, 0x450A0A, 0x1C0A05, 0x7F1D1D, 0x431407, 0x2A0E06, 0xEA580C, 0xF97316, 0x9A3412])
+        case .graphite: .mesh([0x52525B, 0x3F3F46, 0x27272A, 0x3F3F46, 0x27272A, 0x18181B, 0x27272A, 0x18181B, 0x09090B])
+        case .sorbet: .mesh([0xFBCFE8, 0xF9A8D4, 0xFDBA74, 0xFDE68A, 0xFCA5A5, 0xFB7185, 0xFED7AA, 0xFDA4AF, 0xF472B6])
+        case .nebula: .mesh([0x0F0A2E, 0x3B0764, 0x1E1B4B, 0x6D28D9, 0xDB2777, 0x312E81, 0x1E1B4B, 0x9333EA, 0x0F0A2E])
+        case .tropic: .mesh([0x2DD4BF, 0x34D399, 0xFDE047, 0x14B8A6, 0x10B981, 0xFACC15, 0x0D9488, 0x059669, 0xF59E0B])
+        case .berry: .mesh([0x4A044E, 0x831843, 0xBE185D, 0x701A75, 0xDB2777, 0xF43F5E, 0x3B0764, 0x9D174D, 0xE11D48])
+        case .ocean: .mesh([0x082F49, 0x0C4A6E, 0x075985, 0x0E7490, 0x0369A1, 0x0284C7, 0x155E75, 0x0891B2, 0x22D3EE])
+        case .sunrise: .mesh([0xFEF3C7, 0xFDE68A, 0xFCA5A5, 0xFDBA74, 0xFB923C, 0xF87171, 0xF472B6, 0xEC4899, 0xDB2777])
+        case .lavender: .mesh([0xEDE9FE, 0xDDD6FE, 0xE9D5FF, 0xC4B5FD, 0xD8B4FE, 0xF5D0FE, 0xA78BFA, 0xC084FC, 0xF0ABFC])
+        case .mint: .mesh([0xECFDF5, 0xD1FAE5, 0xCCFBF1, 0xA7F3D0, 0x99F6E4, 0xBAE6FD, 0x6EE7B7, 0x5EEAD4, 0x7DD3FC])
+        case .cosmos: .mesh([0x020617, 0x1E1B4B, 0x0F172A, 0x312E81, 0x4338CA, 0x1E3A8A, 0x0F172A, 0x6366F1, 0x020617])
+        case .coral: .mesh([0xFFE4E6, 0xFECDD3, 0xFED7AA, 0xFDA4AF, 0xFB7185, 0xFDBA74, 0xF43F5E, 0xFB923C, 0xF97316])
+        case .forest: .mesh([0x052E16, 0x14532D, 0x064E3B, 0x166534, 0x15803D, 0x047857, 0x022C22, 0x065F46, 0x14532D])
+        case .candy: .mesh([0xA5F3FC, 0xF0ABFC, 0xFDE68A, 0xC4B5FD, 0xF9A8D4, 0xBAE6FD, 0xFBCFE8, 0xA7F3D0, 0xDDD6FE])
+        case .volcano: .mesh([0x18181B, 0x450A0A, 0x7C2D12, 0x3F0A0A, 0xB91C1C, 0xEA580C, 0x7F1D1D, 0xF97316, 0xFBBF24])
+        case .arctic: .mesh([0xF0F9FF, 0xE0F2FE, 0xF1F5F9, 0xBAE6FD, 0xE2E8F0, 0xC7D2FE, 0x93C5FD, 0xCBD5E1, 0xA5B4FC])
+        case .midnight: .mesh([0x0B1020, 0x111827, 0x1E293B, 0x1E1B4B, 0x172554, 0x0F172A, 0x312E81, 0x1E3A8A, 0x0B1020])
+        case .rosegold: .mesh([0xFFF1F2, 0xFFE4E6, 0xFEF3C7, 0xFBCFE8, 0xFECACA, 0xFDE68A, 0xF9A8D4, 0xFDA4AF, 0xFCD34D])
+        case .neon: .mesh([0x0F172A, 0x7C3AED, 0x0F172A, 0xEC4899, 0x0F172A, 0x22D3EE, 0x0F172A, 0x84CC16, 0x0F172A])
+        case .glacier: .linear([0xE0F2FE, 0xF8FAFC, 0xDBEAFE])
+        case .azure: .linear([0x38BDF8, 0x818CF8])
+        case .flamingo: .linear([0xF472B6, 0xFB923C])
+        case .lime: .linear([0xA3E635, 0x22D3EE])
+        case .royal: .linear([0x1E3A8A, 0x7C3AED])
+        case .sunset: .linear([0xF59E0B, 0xEF4444, 0xBE185D])
+        case .citrus: .linear([0xFDE047, 0xFB923C])
+        case .grape: .linear([0x7E22CE, 0xDB2777])
+        case .steel: .linear([0x64748B, 0x1E293B])
+        case .seafoam: .linear([0x99F6E4, 0x93C5FD])
+        case .blush: .linear([0xFCE7F3, 0xE0E7FF])
+        case .copper: .linear([0x7C2D12, 0xD97706])
+        case .emerald: .linear([0x064E3B, 0x10B981])
+        case .cherry: .linear([0x881337, 0xF43F5E])
+        case .sand: .linear([0xFAF5EB, 0xE7D7C1])
+        case .twilight: .linear([0x0F172A, 0x4C1D95, 0xDB2777])
+        case .spectrum: .angular([0xF87171, 0xFBBF24, 0x34D399, 0x38BDF8, 0xA78BFA, 0xF472B6, 0xF87171])
+        case .pastel: .angular([0xFECACA, 0xFDE68A, 0xBBF7D0, 0xBAE6FD, 0xDDD6FE, 0xFBCFE8, 0xFECACA])
+        case .nova: .radial([0x3B82F6, 0x1E1B4B, 0x0B1020])
+        case .bloom: .radial([0xF472B6, 0x701A75, 0x1E0A1E])
+        case .amber: .radial([0xFBBF24, 0x9A3412, 0x1C1007])
+        case .firefly: .radial([0x34D399, 0x065F46, 0x03140E])
+        case .pearl: .radial([0xFFFFFF, 0xF1F5F9, 0xCBD5E1])
+        case .halo: .radial([0xFEF9C3, 0xFDBA74, 0xF472B6])
+        case .paper: .solid(0xF4F4F5)
+        case .ink: .solid(0x0F172A)
+        case .snow: .solid(0xFFFFFF)
+        case .onyx: .solid(0x09090B)
+        case .slate: .solid(0x334155)
+        case .cream: .solid(0xFAF7F0)
+        case .navy: .solid(0x1E3A8A)
+        case .pine: .solid(0x14532D)
+        case .wine: .solid(0x7F1D1D)
+        case .lilac: .solid(0xEDE9FE)
+        case .butter: .solid(0xFEF9C3)
+        case .tangerine: .solid(0xF97316)
+        case .rose: .solid(0xFB7185)
+        case .sun: .solid(0xFACC15)
+        case .clear: .clear
+        }
+    }
 
     @ViewBuilder var view: some View {
-        switch self {
-        case .aurora: mesh(0x6EE7B7, 0x4F46E5, 0x818CF8, 0x22D3EE, 0x312E81, 0xA78BFA, 0xC084FC, 0x22D3EE, 0x312E81)
-        case .peach: mesh(0xFDE68A, 0xFECDD3, 0xFDA4AF, 0xFDBA74, 0xFBCFE8, 0xF9A8D4, 0xFDBA74, 0xF472B6, 0xF472B6)
-        case .lagoon: mesh(0x67E8F9, 0x38BDF8, 0x3B82F6, 0x22D3EE, 0x2563EB, 0x1D4ED8, 0x06B6D4, 0x0EA5E9, 0x1E40AF)
-        case .dusk: mesh(0x2E1065, 0x4C1D95, 0x7C3AED, 0x7C3AED, 0xC026D3, 0xF97316, 0xF97316, 0xFB923C, 0xFDE047)
-        case .matcha: mesh(0xECFCCB, 0xD9F99D, 0xBEF264, 0xD9F99D, 0xA3E635, 0x86EFAC, 0xBEF264, 0x4ADE80, 0x22C55E)
-        case .holo: mesh(0xF5D0FE, 0xA5B4FC, 0x67E8F9, 0xFDE68A, 0xF0ABFC, 0xA5F3FC, 0xD9F99D, 0xFBCFE8, 0xC4B5FD)
-        case .ember: mesh(0x1C0A05, 0x450A0A, 0x1C0A05, 0x7F1D1D, 0x431407, 0x2A0E06, 0xEA580C, 0xF97316, 0x9A3412)
-        case .glacier:
-            LinearGradient(colors: [Color(hex: 0xE0F2FE), Color(hex: 0xF8FAFC), Color(hex: 0xDBEAFE)],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-        case .graphite: mesh(0x52525B, 0x3F3F46, 0x27272A, 0x3F3F46, 0x27272A, 0x18181B, 0x27272A, 0x18181B, 0x09090B)
-        case .paper: Color(hex: 0xF4F4F5)
-        case .ink: Color(hex: 0x0F172A)
-        case .clear: Color.clear
-        case .silk, .prism, .solstice, .boreal:
+        switch paint {
+        case .image:
             GeometryReader { geometry in
                 Image(name)
                     .resizable()
@@ -263,6 +360,19 @@ enum Backdrop: String, CaseIterable, Identifiable {
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .clipped()
             }
+        case let .mesh(c):
+            MeshGradient(width: 3, height: 3,
+                         points: [[0, 0], [0.5, 0], [1, 0], [0, 0.5], [0.5, 0.5], [1, 0.5], [0, 1], [0.5, 1], [1, 1]],
+                         colors: c.map(Color.init(hex:)))
+        case let .linear(c):
+            LinearGradient(colors: c.map(Color.init(hex:)), startPoint: .topLeading, endPoint: .bottomTrailing)
+        case let .angular(c):
+            AngularGradient(colors: c.map(Color.init(hex:)), center: .center)
+        case let .radial(c):
+            // Sized to the canvas, so the glow reads the same in a tile and on a full screen.
+            EllipticalGradient(colors: c.map(Color.init(hex:)), center: .center, startRadiusFraction: 0, endRadiusFraction: 0.75)
+        case let .solid(c): Color(hex: c)
+        case .clear: Color.clear
         }
     }
 
@@ -283,10 +393,11 @@ enum Backdrop: String, CaseIterable, Identifiable {
     }
 }
 
-private func mesh(_ colors: Int...) -> MeshGradient {
-    MeshGradient(width: 3, height: 3,
-                 points: [[0, 0], [0.5, 0], [1, 0], [0, 0.5], [0.5, 0.5], [1, 0.5], [0, 1], [0.5, 1], [1, 1]],
-                 colors: colors.map(Color.init(hex:)))
+/// WCAG relative luminance of an sRGB colour.
+private func luminance(_ hex: Int) -> Double {
+    [16, 8, 0].map { Double((hex >> $0) & 0xFF) / 255 }
+        .map { $0 <= 0.04045 ? $0 / 12.92 : pow(($0 + 0.055) / 1.055, 2.4) }
+        .enumerated().map { [0.2126, 0.7152, 0.0722][$0] * $1 }.reduce(0, +)
 }
 
 /// The selected part of the frozen screen with its annotations, at selection size.
