@@ -165,4 +165,29 @@ struct StylingTests {
         #expect(abs(n.width - rec.canvas.width) <= 2 && abs(n.height - rec.canvas.height) <= 2, "\(n) vs \(rec.canvas)")
         #expect(rec.style.tilt == .iso, "style restored after export")
     }
+
+    @Test func autoBalanceEvensThePlainMarginAroundTheContent() {
+        // White screen with a red block: 20 px from the left and top of the selection, 80 px from the right and bottom.
+        let ctx = Fixture.context(400, 300)
+        ctx.setFillColor(CGColor(gray: 1, alpha: 1)); ctx.fill(CGRect(x: 0, y: 0, width: 400, height: 300))
+        ctx.setFillColor(CGColor(srgbRed: 1, green: 0, blue: 0, alpha: 1))
+        // CGContext's origin is bottom-left: the block spans y 120…200 from the top.
+        ctx.fill(CGRect(x: 120, y: 100, width: 100, height: 80))
+        let s = Fixture.session(ctx.makeImage()!, scale: 1)
+        s.selection = CGRect(x: 100, y: 100, width: 200, height: 180)
+        s.phase = .editing
+        s.style.enabled = true
+        let m = plainMargins(s.image.cropping(to: s.selection)!)
+        #expect(m?.left == 20 && m?.top == 20 && m?.right == 80 && m?.bottom == 80, "\(String(describing: m))")
+        s.style.autoBalance = true
+        #expect(s.shotArea == CGRect(x: 100, y: 100, width: 140, height: 120), "\(s.shotArea)")
+        let image = s.render()!
+        #expect(image.width == Int(s.canvas.width))
+        s.style.autoBalance = false
+        #expect(s.shotArea == s.selection)
+        // Nothing plain at the edges: nothing to trim.
+        let busy = styled()
+        busy.style.autoBalance = true
+        #expect(busy.shotArea == busy.selection)
+    }
 }

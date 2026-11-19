@@ -220,11 +220,11 @@ struct StylePanel: View {
         }
         Group2("Balance") {
             Toggle("Auto balance", isOn: $s.style.autoBalance).toggleStyle(.switch).controlSize(.mini).tint(Color.mark)
-                .help("The same room on every side, in proportion to the shot")
+                .help("Trims the plain margin around what's in the shot so it's the same on every side, and centres it")
         }
-        if !s.style.autoBalance {
-            Group2("Space and position") {
-                LabeledSlider(label: "Padding", value: $s.style.padding, range: 0...200, text: "\(Int(s.style.padding))")
+        Group2("Space and position") {
+            LabeledSlider(label: "Padding", value: $s.style.padding, range: 0...200, text: "\(Int(s.style.padding))")
+            if !s.style.autoBalance {
                 HStack {
                     Text("Position").font(.system(size: 12)).foregroundStyle(.secondary)
                     Spacer()
