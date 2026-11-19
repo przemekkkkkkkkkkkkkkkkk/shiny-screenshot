@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum Tool: String, CaseIterable, Identifiable {
+enum Tool: String, CaseIterable, Identifiable, Codable {
     case arrow, rect, highlight, spotlight, blur, step, text, pen
 
     var id: Self { self }
@@ -101,6 +101,14 @@ final class Session {
     var windowsOnly = false
     /// Scrolling capture: the selection is the area to record, not to mark up.
     var scrolling = false
+    /// How the capture started and the app in front then, for the Library.
+    var mode = CaptureMode.area
+    var app: String?
+    /// The Library entry this capture is, or becomes: reopening one and copying again updates it.
+    var shotID = UUID()
+    /// Pixels per point the export is tagged with, when it differs from `scale`: a capture shrunk to fit a smaller
+    /// screen keeps every pixel and pastes at its original size.
+    var pasteScale: CGFloat?
 
     /// `create` remembers what to restore if the new selection ends up too small.
     private enum Drag {

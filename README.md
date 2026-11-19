@@ -79,6 +79,8 @@ The menu bar also has Capture Full Screen, Capture Scrolling Area (select the pa
 
 With no tool selected, drag inside the selection to move it, or drag its handles to resize. After copying, a card in the corner lets you drag the image into another app, save it, pin it above all windows, or reopen it with every annotation still editable.
 
+**Library** (menu bar › Library…, ⌘L) keeps captures for later: add one from the card's Library button, or turn on *Keep every capture in the Library* in Settings. Group by day, app, type or tag; sort by date or size; filter by search, date, type, tag or favourites. Right-click a capture to rename it, tag it, or edit it again on any screen: the whole frozen screen comes back with every annotation editable, shrunk to fit if it came from a bigger display. Captures saved without their markup (and scrolling captures) open as the image itself to draw on. Copying the edited capture updates its entry.
+
 Settings (menu bar icon › Settings…) holds the shortcut, save folder, open at login and update options.
 
 ## Release

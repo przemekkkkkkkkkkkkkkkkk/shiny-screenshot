@@ -1,12 +1,12 @@
 import SwiftUI
 
-enum CardAction { case copy, save, pin, edit, dismiss }
+enum CardAction { case copy, save, pin, edit, library, dismiss }
 
 /// Shown in the bottom-left corner after a capture. Hides itself after a few seconds unless hovered.
 struct CardView: View {
     let title: String
     let image: NSImage
-    var canEdit = true
+    @State var inLibrary = false
     let drag: () -> NSItemProvider
     let act: (CardAction) -> Void
     @State private var hovering = false
@@ -36,7 +36,20 @@ struct CardView: View {
                 CardButton(title: "Copy", symbol: "doc.on.doc") { act(.copy) }
                 CardButton(title: "Save", symbol: "square.and.arrow.down") { act(.save) }
                 CardButton(title: "Pin", symbol: "pin") { act(.pin) }
-                if canEdit { CardButton(title: "Edit", symbol: "pencil") { act(.edit) } }
+                CardButton(title: "Edit", symbol: "pencil") { act(.edit) }
+                Button {
+                    inLibrary = true
+                    act(.library)
+                } label: {
+                    Image(systemName: inLibrary ? "checkmark" : "photo.stack")
+                        .font(.system(size: 12, weight: .medium))
+                        .frame(width: 30, height: 30)
+                        .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(inLibrary)
+                .help(inLibrary ? "In the Library" : "Save to Library")
             }
         }
         .padding(12)

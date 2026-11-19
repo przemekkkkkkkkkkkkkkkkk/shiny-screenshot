@@ -132,6 +132,7 @@ final class Updates: NSObject, SPUStandardUserDriverDelegate {
 
 struct SettingsView: View {
     @AppStorage("saveFolder") private var folder = URL.desktopDirectory
+    @AppStorage("keepInLibrary") private var keepInLibrary = false
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
     @State private var autoCheck = Updates.shared.updater.automaticallyChecksForUpdates
     @State private var autoInstall = Updates.shared.updater.automaticallyDownloadsUpdates
@@ -159,6 +160,16 @@ struct SettingsView: View {
                 } label: {
                     Text("Save to")
                     Label(FileManager.default.displayName(atPath: folder.path), systemImage: "folder")
+                }
+            }
+
+            Section("Library") {
+                Toggle(isOn: $keepInLibrary) {
+                    Text("Keep every capture in the Library")
+                    Text("Otherwise only the ones you add from the card after a capture.")
+                }
+                LabeledContent("Captures") {
+                    Button("Open Library…") { Shiny.shared.showLibrary() }
                 }
             }
 
