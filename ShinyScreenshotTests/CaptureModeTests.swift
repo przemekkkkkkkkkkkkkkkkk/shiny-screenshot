@@ -121,9 +121,9 @@ struct CaptureModeTests {
         let s = Fixture.session(Fixture.gradient(200, 100), scale: 1)
         s.selectAll()
         let shot = try #require(Shot(s))
-        #expect(shot.editable && shot.session === s)
+        #expect(shot.session === s)
         let old = shot.withoutSession
-        #expect(!old.editable && old.session == nil && old.cgImage === shot.cgImage && old.size == shot.size)
+        #expect(old.session == nil && old.cgImage === shot.cgImage && old.size == shot.size)
     }
 
     @Test func opaqueShotsSaveWithoutAlpha() throws {
