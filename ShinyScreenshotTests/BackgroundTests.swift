@@ -73,7 +73,8 @@ struct BackgroundTests {
         let s = Fixture.session(Fixture.solid(800, 600, CGColor(srgbRed: 0, green: 0.5, blue: 1, alpha: 1)), scale: 2)
         s.selection = CGRect(x: 50, y: 50, width: 200, height: 100)
         s.phase = .editing
-        s.style = Style(enabled: true, backdrop: .clear, padding: 0, radius: 32, shadow: 0, ratio: .auto)
+        s.style = Style()
+        s.style.enabled = true; s.style.backdrop = .clear; s.style.padding = 0; s.style.radius = 32; s.style.shadow = 0
         let rounded = try #require(Shot(s))
         let px = Pixels(rounded.cgImage)
         #expect(px.width == 400 && px.height == 200)
@@ -123,7 +124,7 @@ struct BackgroundTests {
                         let f = s.previewFrame, c = s.canvas, eps = 1e-6
                         let label = "\(size) \(sel) \(ratio) p\(padding): \(f)"
                         #expect(f.width > 0 && f.height > 0 && f.minX.isFinite && f.minY.isFinite, "\(label)")
-                        #expect(f.minX >= 20 - eps && f.maxX <= size.width - 320 + eps, "\(label)")
+                        #expect(f.minX >= 20 - eps && f.maxX <= size.width - s.panelRoom - 20 + eps, "\(label)")
                         #expect(f.minY >= 50 - eps && f.maxY <= size.height - 100 + eps, "\(label)")
                         #expect(abs(f.width / f.height - c.width / c.height) < 1e-6, "aspect \(label)")
                         #expect(f.width <= c.width + eps, "never scaled up \(label)")
@@ -141,11 +142,11 @@ struct BackgroundTests {
                     let s = styled(size, sel)
                     s.style.enabled = enabled
                     let c = s.toolbarCenter(around: enabled ? s.previewFrame : sel)
-                    // With Background on, the toolbar sits left of the panel (which starts at width − 285),
+                    // With Background on, the toolbar sits left of the panel (which starts at width − panelRoom + 10),
                     // or on screens too narrow for that, docks at the bottom below the vertically centred panel.
                     let onScreen = c.x - Self.toolbarHalfWidth >= 0 && c.x + Self.toolbarHalfWidth <= size.width
                         && c.y - Self.toolbarHalfHeight >= 0 && c.y + Self.toolbarHalfHeight <= size.height
-                    let clearOfPanel = !enabled || c.x + Self.toolbarHalfWidth <= size.width - 285 || c.y >= size.height - 60
+                    let clearOfPanel = !enabled || c.x + Self.toolbarHalfWidth <= size.width - s.panelRoom + 10 || c.y >= size.height - 60
                     let fits = onScreen && clearOfPanel
                     if !fits { offScreen.append((size.width, "\(size) background=\(enabled) sel=\(sel) centre=\(c)")) }
                 }

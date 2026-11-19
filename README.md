@@ -20,7 +20,9 @@
 
 **Your selection is the editor.** Press ⇧⌘2, drag an area, and the toolbar appears right under it: arrows, boxes, highlight, blur, numbered steps, text and pen.
 
-**Add a background without leaving the screen.** Wallpapers, gradients, padding, roundness, shadow, and fixed sizes for social posts.
+**Add a background without leaving the screen.** 68 backgrounds with search and favourites, backgrounds built from your screenshot's colours, your own gradient or picture, or your desktop. Window and device frames, glass and inset styles, eight shadows, duo and stacked layouts, 3D tilt, patterns, grain, light and shapes, platform sizes, auto balance, a watermark, and saved presets. Emails and API keys can be hidden automatically.
+
+**Turn it into a video.** Save the styled shot as a 60 fps MP4 with a camera move (zoom, pan, parallax, float, reveal, orbit), or record an area of the screen and export the recording with the same background, frame and text.
 
 <img src="assets/screenshots/background.jpg" width="1200" alt="The Background panel next to a selection: wallpaper and gradient tiles, padding, roundness and shadow sliders, and size presets.">
 

@@ -279,7 +279,8 @@ struct ExportTests {
         let tiff = try #require(timed("Shot.image.tiffRepresentation 6016×3384") { shot.image.tiffRepresentation })
         print("SIZE png \(png.count / 1_048_576) MB, tiff \(tiff.count / 1_048_576) MB")
 
-        s.style = Style(enabled: true, backdrop: .silk, padding: 160, radius: 32, shadow: 0.8, ratio: .portrait)
+        s.style = Style()
+        s.style.enabled = true; s.style.backdrop = .silk; s.style.padding = 160; s.style.radius = 32; s.style.shadow = 0.8; s.style.ratio = .portrait
         let styled = try #require(timed("render 3328×4160 pt @2x, wallpaper + portrait + 160 padding, incl. drawing") {
             s.render().map { _ = $0.dataProvider?.data; return $0 }
         })
