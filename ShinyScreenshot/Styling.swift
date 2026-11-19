@@ -165,7 +165,7 @@ enum Corner: String, Codable, CaseIterable, Identifiable {
     var id: Self { self }
 }
 
-enum ExportFormat: String, Codable, CaseIterable, Identifiable {
+nonisolated enum ExportFormat: String, Codable, CaseIterable, Identifiable {
     case png = "PNG", jpeg = "JPEG", heic = "HEIC"
     var id: Self { self }
     var ext: String { self == .jpeg ? "jpg" : rawValue.lowercased() }

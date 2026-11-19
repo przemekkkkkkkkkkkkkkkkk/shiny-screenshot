@@ -611,6 +611,8 @@ struct Shot {
     /// Shared by its copies and by every export of the same session, so the Library keeps a capture once.
     private(set) var id = UUID()
     var kind = CaptureMode.area
+    /// How Save writes it; Copy is always PNG.
+    var format = ExportFormat.png
     /// The app in front when the capture started.
     var app: String?
     /// The background's name, when it had one.
@@ -618,7 +620,9 @@ struct Shot {
 
     init?(_ s: Session) {
         guard let cg = s.render() else { return nil }
-        self.init(cg, scale: s.pasteScale ?? s.scale, displayID: s.displayID, opaque: s.isOpaque)
+        // The export size setting changes the pixels, not the size it pastes at.
+        self.init(cg, scale: (s.pasteScale ?? s.scale) * s.exportScale / s.scale, displayID: s.displayID, opaque: s.isOpaque)
+        format = s.style.enabled ? s.style.format : .png
         session = s
         id = s.shotID
         kind = s.mode
@@ -686,12 +690,13 @@ struct Shot {
     static var folderName: String { FileManager.default.displayName(atPath: folder.path) }
 
     @discardableResult
-    func save(to dir: URL = Shot.folder) -> URL? { Self.save(cgImage, size: size, opaque: opaque, to: dir) }
+    func save(to dir: URL = Shot.folder) -> URL? { Self.save(cgImage, size: size, opaque: opaque, format: format, to: dir) }
 
     /// Saves without blocking the UI.
     func saveInBackground(to dir: URL = Shot.folder) async -> URL? {
         let (cgImage, size, opaque) = (cgImage, size, opaque)
-        return await Task.detached { Self.save(cgImage, size: size, opaque: opaque, to: dir) }.value
+        let format = format
+        return await Task.detached { Self.save(cgImage, size: size, opaque: opaque, format: format, to: dir) }.value
     }
 
     /// The image redrawn without an alpha channel.
@@ -704,11 +709,11 @@ struct Shot {
     }
 
     /// Writes a PNG named like macOS screenshots, adding " (2)", " (3)"… instead of overwriting.
-    nonisolated static func save(_ cgImage: CGImage, size: CGSize, opaque: Bool = false, to dir: URL) -> URL? {
-        guard let png = png(cgImage, size: size, opaque: opaque) else { return nil }
+    nonisolated static func save(_ cgImage: CGImage, size: CGSize, opaque: Bool = false, format: ExportFormat = .png, to dir: URL) -> URL? {
+        guard let png = format == .png ? png(cgImage, size: size, opaque: opaque) : encoded(cgImage, as: format) else { return nil }
         let name = "Shiny Screenshot \(Self.timestamp.string(from: .now))"
         for n in 1...99 {
-            let url = dir.appending(path: n == 1 ? "\(name).png" : "\(name) (\(n)).png")
+            let url = dir.appending(path: n == 1 ? "\(name).\(format.ext)" : "\(name) (\(n)).\(format.ext)")
             do {
                 try png.write(to: url, options: .withoutOverwriting)
                 return url
@@ -719,6 +724,15 @@ struct Shot {
             }
         }
         return nil
+    }
+
+    /// JPEG or HEIC at high quality; neither keeps transparency, so see-through parts come out black.
+    nonisolated static func encoded(_ image: CGImage, as format: ExportFormat) -> Data? {
+        let data = NSMutableData()
+        let type = (format == .heic ? UTType.heic : UTType.jpeg).identifier as CFString
+        guard let dest = CGImageDestinationCreateWithData(data, type, 1, nil) else { return nil }
+        CGImageDestinationAddImage(dest, rgb(image) ?? image, [kCGImageDestinationLossyCompressionQuality: 0.92] as CFDictionary)
+        return CGImageDestinationFinalize(dest) ? data as Data : nil
     }
 
     /// DateFormatter is thread-safe for formatting.
