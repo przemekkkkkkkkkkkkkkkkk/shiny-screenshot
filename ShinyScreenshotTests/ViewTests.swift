@@ -38,14 +38,16 @@ struct ViewTests {
         let grey = Fixture.solid(240, 240, CGColor(gray: 0.5, alpha: 1))
         let a = Pixels(try #require(Capture.pixelate(grey, scale: 1)))
         let b = Pixels(try #require(Capture.pixelate(grey, scale: 1)))
+        let centres = stride(from: 6, to: 240, by: 12).flatMap { y in stride(from: 6, to: 240, by: 12).map { (x: $0, y: y) } }
+        // Measured against the blocks' own mean: colour conversion can shift the whole image a level or two from the
+        // source grey on some runs, and that shift is not noise.
+        let mid = centres.map { Int(a[$0.x, $0.y].r) }.reduce(0, +) / centres.count
         var lighter = 0, darker = 0, differ = 0
-        for y in stride(from: 6, to: 240, by: 12) {
-            for x in stride(from: 6, to: 240, by: 12) {
-                let p = Int(a[x, y].r), mid = Int(Pixels(grey)[x, y].r)
-                if p > mid + 2 { lighter += 1 } else if p < mid - 2 { darker += 1 }
-                if !a[x, y].near(b[x, y], 2) { differ += 1 }
-                #expect(a[x, y].r == a[x, y].g && a[x, y].g == a[x, y].b, "noise changes brightness only")
-            }
+        for (x, y) in centres {
+            let p = Int(a[x, y].r)
+            if p > mid + 2 { lighter += 1 } else if p < mid - 2 { darker += 1 }
+            if !a[x, y].near(b[x, y], 2) { differ += 1 }
+            #expect(a[x, y].r == a[x, y].g && a[x, y].g == a[x, y].b, "noise changes brightness only")
         }
         #expect(lighter > 50 && darker > 50, "lighter \(lighter), darker \(darker) of 400 blocks")
         #expect(differ > 200, "\(differ) of 400 blocks differ between captures")
@@ -121,7 +123,7 @@ struct ViewTests {
         let xs = (0..<rep.pixelsWide).filter { rep.colorAt(x: $0, y: y) != background }
         let width = CGFloat((xs.last ?? 0) - (xs.first ?? 0) + 1) / k
         print("MEASURE toolbar width \(width) pt (toolbarCenter assumes 772)")
-        #expect(width <= 2 * BackgroundTests.toolbarHalfWidth, "toolbar is \(width) pt")
+        #expect(width <= 2 * s.toolbarHalfWidth, "toolbar is \(width) pt")
         #expect(width > 600, "toolbar not found in the snapshot")
     }
 

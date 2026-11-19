@@ -5,8 +5,7 @@ import Testing
 /// Background mode: canvas maths, every backdrop and ratio, style extremes, and where the preview and toolbar land.
 struct BackgroundTests {
     /// Half the toolbar's rendered width (708 pt, measured by ViewTests.toolbarFitsTheWidthItIsLaidOutFor).
-    static let toolbarHalfWidth: CGFloat = 370
-    static let toolbarHalfHeight: CGFloat = 20
+    static let toolbarHalfHeight: CGFloat = 30
 
     static let screens: [CGSize] = [CGSize(width: 800, height: 600), CGSize(width: 1024, height: 640), CGSize(width: 1280, height: 800),
                                     CGSize(width: 1440, height: 900), CGSize(width: 1512, height: 982), CGSize(width: 1920, height: 1080),
@@ -29,6 +28,31 @@ struct BackgroundTests {
         s.phase = .editing
         s.style.enabled = true
         return s
+    }
+
+    @Test func drawingOnThePreviewLandsOnTheShot() {
+        let s = styled(CGSize(width: 1440, height: 900), CGRect(x: 100, y: 100, width: 600, height: 400))
+        s.style.padding = 64
+        s.tool = .arrow
+        // Preview and frozen-screen coordinates round-trip.
+        let q = pt(300, 250)
+        let (p, k) = s.onPreview(q)
+        #expect(k > 0 && k <= 1)
+        #expect(s.fromPreview(p).distance(to: q) < 0.001)
+        // A drag on the preview draws an arrow at the matching screen points.
+        let a = s.onPreview(pt(200, 200)).point, b = s.onPreview(pt(400, 300)).point
+        s.dragChanged(from: s.fromPreview(a), to: s.fromPreview(b))
+        s.dragEnded(from: s.fromPreview(a), to: s.fromPreview(b))
+        #expect(s.annotations.count == 1)
+        #expect(s.annotations[0].points[0].distance(to: pt(200, 200)) < 0.001)
+        #expect(s.annotations[0].points[1].distance(to: pt(400, 300)) < 0.001)
+        // Off the shot, or with no tool, nothing moves or reselects.
+        s.tool = nil
+        let off = s.onPreview(pt(50, 50)).point
+        s.dragChanged(from: s.fromPreview(off), to: s.fromPreview(b))
+        s.dragEnded(from: s.fromPreview(off), to: s.fromPreview(b))
+        #expect(s.selection == CGRect(x: 100, y: 100, width: 600, height: 400))
+        #expect(s.annotations.count == 1)
     }
 
     @Test func canvasAddsPaddingThenWidensToTheRatio() {
@@ -144,9 +168,9 @@ struct BackgroundTests {
                     let c = s.toolbarCenter(around: enabled ? s.previewFrame : sel)
                     // With Background on, the toolbar sits left of the panel (which starts at width − panelRoom + 10),
                     // or on screens too narrow for that, docks at the bottom below the vertically centred panel.
-                    let onScreen = c.x - Self.toolbarHalfWidth >= 0 && c.x + Self.toolbarHalfWidth <= size.width
+                    let onScreen = c.x - s.toolbarHalfWidth >= 0 && c.x + s.toolbarHalfWidth <= size.width
                         && c.y - Self.toolbarHalfHeight >= 0 && c.y + Self.toolbarHalfHeight <= size.height
-                    let clearOfPanel = !enabled || c.x + Self.toolbarHalfWidth <= size.width - s.panelRoom + 10 || c.y >= size.height - 60
+                    let clearOfPanel = !enabled || c.x + s.toolbarHalfWidth <= size.width - s.panelRoom + 10 || c.y >= size.height - 84
                     let fits = onScreen && clearOfPanel
                     if !fits { offScreen.append((size.width, "\(size) background=\(enabled) sel=\(sel) centre=\(c)")) }
                 }

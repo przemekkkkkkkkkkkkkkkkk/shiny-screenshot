@@ -144,16 +144,14 @@ struct ScrollingBar: View {
             Text(s.lost ? "Lost track: scroll back, slower" : "Scroll down · \(s.height) px")
                 .font(.system(size: 12.5, weight: .medium))
                 .monospacedDigit()
-                .foregroundStyle(s.lost ? Color.mark : .white)
+                .foregroundStyle(s.lost ? Color.orange : .primary)
                 .frame(minWidth: 170, alignment: .leading)
             Button("Cancel", action: cancel).controlSize(.small)
             Button("Done", action: done).controlSize(.small)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 14)
         .padding(.vertical, 8)
-        .background(Color(white: 0.11).opacity(0.94), in: Capsule())
-        .overlay(Capsule().strokeBorder(.white.opacity(0.12)))
-        .environment(\.colorScheme, .dark)
+        .glassChrome(Capsule())
         .padding(8)
     }
 }
@@ -172,12 +170,10 @@ struct CountdownView: View {
                 Text("Click to cancel").font(.system(size: 10.5)).foregroundStyle(.secondary)
             }
             .frame(width: 110, height: 86)
-            .background(Color(white: 0.11).opacity(0.94), in: RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.white.opacity(0.12)))
+            .glassChrome(RoundedRectangle(cornerRadius: 26, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .environment(\.colorScheme, .dark)
         .padding(20)
         .task {
             left = seconds

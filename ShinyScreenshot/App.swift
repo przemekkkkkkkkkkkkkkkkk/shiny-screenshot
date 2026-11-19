@@ -279,7 +279,15 @@ final class Shiny {
         let cmd = e.modifierFlags.contains(.command)
         switch (e.keyCode, cmd, Self.letter(e)) {
         case (UInt16(kVK_Escape), _, _):
-            if s.tool != nil { s.tool = nil } else if s.style.enabled { s.style.enabled = false } else { closeOverlay() }
+            if s.tool != nil {
+                s.tool = nil
+            } else if s.style.enabled {
+                s.style.enabled = false
+            } else if !s.annotations.isEmpty && !s.discardArmed {
+                s.armDiscard()
+            } else {
+                closeOverlay()
+            }
         case (UInt16(kVK_Return), _, _), (UInt16(kVK_ANSI_KeypadEnter), _, _), (_, true, "c"):
             handle(s.scrolling ? .scroll : s.recording ? .record : .copy, s)
         case _ where s.scrolling || s.recording:
