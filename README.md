@@ -56,6 +56,7 @@ Download the DMG from the [latest release](https://github.com/przemekkkkkkkkkkkk
 Needs macOS 15+, Xcode and [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`).
 
 ```sh
+echo 'DEVELOPMENT_TEAM = <your team ID>' > Local.xcconfig   # git-ignored; signs the build
 xcodegen
 open ShinyScreenshot.xcodeproj   # then Run, or:
 xcodebuild -scheme ShinyScreenshot -derivedDataPath build build && open build/Build/Products/Debug/ShinyScreenshot.app

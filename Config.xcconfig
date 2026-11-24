@@ -1,0 +1,2 @@
+// The signing team stays out of the repository: put `DEVELOPMENT_TEAM = <your team ID>` in Local.xcconfig (git-ignored).
+#include? "Local.xcconfig"

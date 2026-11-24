@@ -1,4 +1,7 @@
 name: ShinyScreenshot
+configFiles:
+  Debug: Config.xcconfig
+  Release: Config.xcconfig
 options:
   bundleIdPrefix: com.przemek
   deploymentTarget:
@@ -8,7 +11,6 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
     SWIFT_APPROACHABLE_CONCURRENCY: YES
-    DEVELOPMENT_TEAM: <team ID>
     CODE_SIGN_STYLE: Automatic
     ENABLE_HARDENED_RUNTIME: YES
 packages:

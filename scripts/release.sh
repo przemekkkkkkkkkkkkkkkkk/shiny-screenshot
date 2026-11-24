@@ -3,7 +3,7 @@
 # build/release/ShinyScreenshot.app, ShinyScreenshot.zip, ShinyScreenshot-<version>.dmg and the Sparkle appcast.xml.
 #
 # One-time setup (asks for an app-specific password from account.apple.com and keeps it in your keychain):
-#   xcrun notarytool store-credentials shiny-notary --apple-id <your Apple ID> --team-id <team ID>
+#   xcrun notarytool store-credentials shiny-notary --apple-id <your Apple ID> --team-id <your team ID>
 # and dmgbuild, which lays out the disk image window:
 #   brew install pipx && pipx install dmgbuild
 # The Sparkle update key is in the keychain too (account shiny-screenshot; its public half is SUPublicEDKey in project.yml).
@@ -43,7 +43,6 @@ if [ -z "${NOTARIZE_ONLY:-}" ]; then
   <key>method</key><string>developer-id</string>
   <key>destination</key><string>export</string>
   <key>signingStyle</key><string>automatic</string>
-  <key>teamID</key><string><team ID></string>
 </dict></plist>
 PLIST
   xcodebuild -exportArchive -archivePath "$ARCHIVE" -exportOptionsPlist build/ExportOptions.plist \
