@@ -1,0 +1,6 @@
+#!/bin/sh
+# Shiny Screenshot's command line: `shiny help`. Put it on your PATH: ln -s "$PWD/scripts/shiny" /usr/local/bin/shiny
+# Uses $SHINY_APP, else the installed app, else wherever Spotlight finds one (e.g. a local build).
+app=${SHINY_APP:-"/Applications/Shiny Screenshot.app"}
+[ -d "$app" ] || app=$(mdfind "kMDItemCFBundleIdentifier == 'com.przemek.ShinyScreenshot'" | head -n 1)
+exec "$app/Contents/MacOS/ShinyScreenshot" "$@"

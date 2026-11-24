@@ -2,7 +2,6 @@ import Carbon.HIToolbox
 import SwiftUI
 import UniformTypeIdentifiers
 
-@main
 struct ShinyScreenshotApp: App {
     @NSApplicationDelegateAdaptor private var delegate: AppDelegate
 

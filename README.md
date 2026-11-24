@@ -85,6 +85,19 @@ With no tool selected, drag inside the selection to move it, or drag its handles
 
 Settings (menu bar icon › Settings…) holds the shortcut, save folder, open at login and update options.
 
+## Command line (for scripts and agents)
+
+The app binary doubles as a CLI that styles and marks up an image file with the same renderer as the overlay. Link the wrapper onto your PATH:
+
+```sh
+ln -s "$PWD/scripts/shiny" /usr/local/bin/shiny
+screencapture -x -R 0,0,1280,800 shot.png
+shiny render shot.png -o out.png --preset Wallpaper --title "New settings" \
+  --highlight 120,340,600,60 --color blue --arrow 900,700,700,380 --step 140,360 --text 760,700 "Click here"
+```
+
+Annotations: `--arrow --rect --highlight --spotlight --blur --step --text --pen`, coloured by the `--color` before them, in input pixels. Background: `--preset`, `--background`, `--title`, or any style field with `--style '{"frame":"macOS","padding":64}'`; `--no-background` for just the markup. `shiny help` has the full usage, and `shiny list` every preset, background and style field with its choices. It prints the output path and pixel size, and exits 1 with a message on a bad option or style value.
+
 ## Release
 
 `scripts/release.sh` builds, notarizes and staples the app and DMG, then writes the Sparkle `appcast.xml`. Bump the version in `project.yml` first. Publishing the DMG and `appcast.xml` as a GitHub release of `przemekkkkkkkkkkkkkkkkk/shiny-screenshot` is what installed copies check for updates.
