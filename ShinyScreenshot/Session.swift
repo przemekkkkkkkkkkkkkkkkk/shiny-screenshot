@@ -87,7 +87,9 @@ final class Session {
     }
     private var storedSelection = CGRect.zero
     var annotations: [Annotation] = []
-    var tool: Tool?
+    var tool: Tool? { didSet { if tool != nil { applyPendingBackground() } } }
+    /// The Settings background, waiting for the area to be settled: it turns on with the first tool or the export.
+    var pendingBackground = false
     /// Colour, label size and look apply to the next annotation and to the label being typed.
     var color = palette[0] { didSet { editLabel { $0.color = color } } }
     var labelSize: CGFloat = 15 { didSet { editLabel { $0.size = labelSize } } }
@@ -152,6 +154,12 @@ final class Session {
     /// The window shot, while the selection is still the window it was taken for.
     var activeWindowShot: Capture.WindowShot? {
         windowShot.flatMap { $0.selection == selection ? $0 : nil }
+    }
+
+    func applyPendingBackground() {
+        guard pendingBackground else { return }
+        pendingBackground = false
+        style.enabled = true
     }
 
     func selectAll() {

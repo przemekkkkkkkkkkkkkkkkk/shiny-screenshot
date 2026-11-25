@@ -288,6 +288,7 @@ private struct Toolbar: View {
                                on: s.style.enabled, toggle: true,
                                help: "Wrap the shot in a background") {
                         s.commitText()
+                        s.pendingBackground = false
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { s.style.enabled.toggle() }
                     }
                 }

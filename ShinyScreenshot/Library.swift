@@ -558,10 +558,13 @@ struct LibraryView: View {
         let url = library.mediaURL(of: item)
         let selected = selection == item.id
         return VStack(alignment: .leading, spacing: 6) {
-            LibraryThumbnail(url: library.url(of: item), version: item.updated)
-                .frame(height: 130)
-                .frame(maxWidth: .infinity)
-                .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: 8))
+            // Every tile the same shape, the capture filling it from the top, so the grid lines up.
+            Color.clear
+                .aspectRatio(16 / 10, contentMode: .fit)
+                .overlay(alignment: .top) { LibraryThumbnail(url: library.url(of: item), version: item.updated) }
+                .background(.quaternary.opacity(0.6))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.separator))
                 .overlay(alignment: .topTrailing) {
                     Button { library.toggleFavorite(item.id) } label: {
                         Image(systemName: item.favorite ? "star.fill" : "star")
@@ -580,13 +583,11 @@ struct LibraryView: View {
                 .onDrag { NSItemProvider(contentsOf: url) ?? NSItemProvider() }
             HStack(spacing: 4) {
                 Image(systemName: item.kind.symbol).foregroundStyle(.secondary)
-                Text(item.title).lineLimit(1)
-                Spacer(minLength: 4)
-                Text(item.date.formatted(date: .omitted, time: .shortened)).foregroundStyle(.secondary)
+                Text(item.title).lineLimit(1).fontWeight(.medium)
             }
             .font(.callout)
-            Text("\(item.width) × \(item.height)" + (item.backdrop.map { " · \($0)" } ?? ""))
-                .font(.caption).foregroundStyle(.secondary)
+            Text("\(item.date.formatted(date: .omitted, time: .shortened)) · \(item.width) × \(item.height)" + (item.backdrop.map { " · \($0)" } ?? ""))
+                .font(.caption).foregroundStyle(.secondary).lineLimit(1)
             if !item.tagList.isEmpty {
                 HStack(spacing: 4) {
                     ForEach(item.tagList, id: \.self) { t in
@@ -649,7 +650,7 @@ private struct LibraryThumbnail: View {
     var body: some View {
         Group {
             if let image {
-                Image(decorative: image, scale: 1).resizable().scaledToFit().padding(4)
+                Image(decorative: image, scale: 1).resizable().scaledToFill()
             } else {
                 ProgressView().controlSize(.small)
             }

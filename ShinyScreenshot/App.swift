@@ -62,6 +62,7 @@ private struct MenuContent: View {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        UserDefaults.standard.register(defaults: ["keepInLibrary": true])
         Shot.removeOldDragFiles()
         _ = Updates.shared
         Shiny.shared.registerShortcuts()
@@ -122,7 +123,12 @@ final class Shiny {
                 let session = Session(try await Capture.freeze(displayID: id, scale: scale), displayID: id)
                 session.mode = mode == .again ? .area : mode
                 session.app = app
-                if let preset = Preset.startingBackground { session.style = preset.style }
+                // Off until the area is settled, so it can still be moved and resized.
+                if let preset = Preset.startingBackground {
+                    session.style = preset.style
+                    session.style.enabled = false
+                    session.pendingBackground = true
+                }
                 switch mode {
                 case .area: break
                 case .window: session.windowsOnly = true
@@ -281,7 +287,7 @@ final class Shiny {
         case (UInt16(kVK_Escape), _, _):
             if s.tool != nil {
                 s.tool = nil
-            } else if s.style.enabled {
+            } else if s.style.enabled && s.phase == .editing {
                 s.style.enabled = false
             } else if !s.annotations.isEmpty && !s.discardArmed {
                 s.armDiscard()
@@ -329,6 +335,7 @@ final class Shiny {
             closeOverlay()
             return record(s.selection, on: s)
         }
+        s.applyPendingBackground()
         if s.video != nil || action == .video {
             guard action != .pin else { return }
             closeOverlay()
