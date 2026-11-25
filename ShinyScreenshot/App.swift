@@ -122,6 +122,7 @@ final class Shiny {
                 let session = Session(try await Capture.freeze(displayID: id, scale: scale), displayID: id)
                 session.mode = mode == .again ? .area : mode
                 session.app = app
+                if let preset = Preset.startingBackground { session.style = preset.style }
                 switch mode {
                 case .area: break
                 case .window: session.windowsOnly = true
