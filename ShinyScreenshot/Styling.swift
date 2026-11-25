@@ -258,6 +258,12 @@ struct Preset: Codable, Identifiable, Hashable {
         ]
     }()
 
+    /// The look every capture starts with, picked in Settings by name; nil starts without a background.
+    @MainActor static var startingBackground: Preset? {
+        let name = UserDefaults.standard.string(forKey: "startingBackground")
+        return (saved + builtIn).first { $0.name == name }
+    }
+
     /// Saved in UserDefaults; a preset this version can't read is dropped.
     static var saved: [Preset] {
         get { (UserDefaults.standard.data(forKey: "stylePresets")).flatMap { try? JSONDecoder().decode([Preset].self, from: $0) } ?? [] }
