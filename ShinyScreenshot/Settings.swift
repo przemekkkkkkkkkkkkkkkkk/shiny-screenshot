@@ -132,7 +132,7 @@ final class Updates: NSObject, SPUStandardUserDriverDelegate {
 
 struct SettingsView: View {
     @AppStorage("saveFolder") private var folder = URL.desktopDirectory
-    @AppStorage("keepInLibrary") private var keepInLibrary = false
+    @AppStorage("keepInLibrary") private var keepInLibrary = true
     @AppStorage("startingBackground") private var startingBackground = ""
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
     @State private var autoCheck = Updates.shared.updater.automaticallyChecksForUpdates
@@ -167,7 +167,7 @@ struct SettingsView: View {
                     ForEach(Preset.saved + Preset.builtIn) { Text($0.name).tag($0.name) }
                 } label: {
                     Text("Background")
-                    Text("Every capture starts wrapped in this look. Esc removes it.")
+                    Text("Added once the area is set: when you pick a tool, copy or save.")
                 }
             }
 

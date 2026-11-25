@@ -242,4 +242,19 @@ struct HeadingTests {
         let light = TextFont.avenir.font(size: 40, weight: .light), black = TextFont.avenir.font(size: 40, weight: .black)
         #expect(light.fontName != black.fontName, "weights pick different faces")
     }
+
+    /// The Settings background waits until a tool is picked, and the Background button cancels it.
+    @Test func startingBackgroundWaitsForTheArea() {
+        let s = Fixture.screen(1440, 900)
+        s.pendingBackground = true
+        s.dragEnded(from: pt(100, 100), to: pt(400, 300))
+        #expect(!s.style.enabled)
+        s.dragEnded(from: pt(399, 299), to: pt(500, 400))
+        #expect(s.selection.width > 300 && !s.style.enabled)
+        s.tool = .arrow
+        #expect(s.style.enabled && !s.pendingBackground)
+        s.style.enabled = false
+        s.tool = .rect
+        #expect(!s.style.enabled)
+    }
 }
