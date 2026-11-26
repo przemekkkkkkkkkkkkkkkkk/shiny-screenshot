@@ -242,11 +242,10 @@ struct AnnotationTests {
         #expect(image.width == 600 && image.height == 400)
     }
 
-    @Test func backgroundModeLocksTheSelectionButKeepsDrawing() {
+    @Test func backgroundModeKeepsTheSelectionInPlaceButKeepsDrawing() {
         s.style.enabled = true
         for tool in [nil] + Tool.allCases {
             s.tool = tool
-            s.drag(pt(700, 500), pt(800, 600))                 // a handle: no resize
             s.drag(pt(900, 700), pt(1000, 800))                // outside: no new selection
             s.drag(pt(200, 200), pt(400, 300))                 // inside with no tool: no move
             #expect(s.selection == Self.selection, "\(String(describing: tool))")

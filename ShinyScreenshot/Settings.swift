@@ -167,7 +167,7 @@ struct SettingsView: View {
                     ForEach(Preset.saved + Preset.builtIn) { Text($0.name).tag($0.name) }
                 } label: {
                     Text("Background")
-                    Text("Added once the area is set: when you pick a tool, copy or save.")
+                    Text("Added as soon as the area is set. Esc removes it.")
                 }
             }
 

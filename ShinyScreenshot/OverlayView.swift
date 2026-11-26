@@ -28,8 +28,8 @@ struct OverlayView: View {
             Color.clear
                 .contentShape(Rectangle())
                 .gesture(DragGesture(minimumDistance: 0)
-                    .onChanged { s.dragChanged(from: s.fromPreview($0.startLocation), to: s.fromPreview($0.location)) }
-                    .onEnded { s.dragEnded(from: s.fromPreview($0.startLocation), to: s.fromPreview($0.location)) })
+                    .onChanged { s.previewDragChanged(from: $0.startLocation, to: $0.location) }
+                    .onEnded { s.previewDragEnded(from: $0.startLocation, to: $0.location) })
                 .onContinuousHover { phase in
                     if case .active(let p) = phase, s.phase == .selecting { s.cursor = p }
                     (s.tool == .text ? NSCursor.iBeam : .crosshair).set()
@@ -46,6 +46,18 @@ struct OverlayView: View {
                     .scaleEffect(preview.width / s.canvas.width, anchor: .topLeading)
                     .offset(x: preview.minX, y: preview.minY)
                     .allowsHitTesting(false)
+                if s.phase == .editing {
+                    // The shot stays resizable with the background on.
+                    let (o, k) = s.onPreview(s.selection.origin)
+                    let r = CGRect(origin: o, size: CGSize(width: s.selection.width * k, height: s.selection.height * k))
+                    ForEach(Handle.allCases, id: \.self) { h in
+                        let p = handlePoint(h, of: r)
+                        HandleMark(handle: h)
+                            .frame(width: 22, height: 22)
+                            .offset(x: p.x - 11, y: p.y - 11)
+                    }
+                    .allowsHitTesting(false)
+                }
             } else if !s.selection.isEmpty {
                 ShotView(s: s)
                     .offset(x: s.selection.minX, y: s.selection.minY)

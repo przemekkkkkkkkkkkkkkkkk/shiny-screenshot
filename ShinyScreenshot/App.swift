@@ -123,7 +123,7 @@ final class Shiny {
                 let session = Session(try await Capture.freeze(displayID: id, scale: scale), displayID: id)
                 session.mode = mode == .again ? .area : mode
                 session.app = app
-                // Off until the area is settled, so it can still be moved and resized.
+                // Off until the area is set, so the screen isn't covered while selecting.
                 if let preset = Preset.startingBackground {
                     session.style = preset.style
                     session.style.enabled = false
@@ -141,6 +141,7 @@ final class Shiny {
                        r.width >= minSelectionSide, r.height >= minSelectionSide {
                         session.selection = r
                         session.style = last.style
+                        session.pendingBackground = false
                         session.phase = .editing
                     }
                 }
