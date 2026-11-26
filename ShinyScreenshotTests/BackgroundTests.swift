@@ -243,18 +243,20 @@ struct HeadingTests {
         #expect(light.fontName != black.fontName, "weights pick different faces")
     }
 
-    /// The Settings background waits until a tool is picked, and the Background button cancels it.
-    @Test func startingBackgroundWaitsForTheArea() {
+    /// The Settings background turns on with the selection, and the shot stays resizable from its handles on the preview.
+    @Test func startingBackgroundShowsAndStaysResizable() {
         let s = Fixture.screen(1440, 900)
+        s.style.padding = 64
         s.pendingBackground = true
         s.dragEnded(from: pt(100, 100), to: pt(400, 300))
-        #expect(!s.style.enabled)
-        s.dragEnded(from: pt(399, 299), to: pt(500, 400))
-        #expect(s.selection.width > 300 && !s.style.enabled)
-        s.tool = .arrow
         #expect(s.style.enabled && !s.pendingBackground)
-        s.style.enabled = false
-        s.tool = .rect
-        #expect(!s.style.enabled)
+        // Dragging the bottom-right handle on the preview by 50 screen points grows the area by 50 / preview scale.
+        let (corner, k) = s.onPreview(pt(400, 300))
+        let to = pt(corner.x + 50, corner.y + 50)
+        s.previewDragChanged(from: corner, to: pt(corner.x + 25, corner.y + 25))
+        s.previewDragChanged(from: corner, to: to)
+        s.previewDragEnded(from: corner, to: to)
+        #expect(abs(s.selection.width - (300 + 50 / k)) <= 1 && abs(s.selection.height - (200 + 50 / k)) <= 1)
+        #expect(s.selection.origin == pt(100, 100))
     }
 }

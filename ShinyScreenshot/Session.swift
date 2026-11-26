@@ -79,7 +79,8 @@ final class Session {
     let windows: [Capture.Window]
     let displayID: CGDirectDisplayID
 
-    var phase = Phase.selecting
+    /// The Settings background turns on as soon as the area is set.
+    var phase = Phase.selecting { didSet { if phase == .editing { applyPendingBackground() } } }
     /// Always on the device pixel grid, so the export is a pixel copy of the screen.
     var selection: CGRect {
         get { storedSelection }
@@ -87,8 +88,8 @@ final class Session {
     }
     private var storedSelection = CGRect.zero
     var annotations: [Annotation] = []
-    var tool: Tool? { didSet { if tool != nil { applyPendingBackground() } } }
-    /// The Settings background, waiting for the area to be settled: it turns on with the first tool or the export.
+    var tool: Tool?
+    /// The Settings background, waiting for the area to be set: it turns on when the selection does.
     var pendingBackground = false
     /// Colour, label size and look apply to the next annotation and to the label being typed.
     var color = palette[0] { didSet { editLabel { $0.color = color } } }
@@ -227,16 +228,18 @@ final class Session {
 
     private func beginDrag(at p: CGPoint) -> Drag? {
         if phase == .selecting { return windowsOnly ? nil : .create(previous: .zero, phase: .selecting) }
-        // With a background on, the preview is for drawing only: no handles, no moving or reselecting.
+        // Handle hit areas shrink with the selection so small selections can still be moved and drawn in; on the
+        // background preview they are measured in screen points, at the preview's scale.
+        let k = style.enabled ? previewMapping.k : 1
+        let reach = min(10, min(selection.width, selection.height) * k / 4) / k
+        if let h = Handle.allCases.min(by: { handlePoint($0, of: selection).distance(to: p) < handlePoint($1, of: selection).distance(to: p) }),
+           handlePoint(h, of: selection).distance(to: p) < reach {
+            return .resize(h, selection)
+        }
+        // With a background on, the preview is for resizing and drawing only: no moving or reselecting.
         if style.enabled {
             guard selection.contains(p) else { return nil }
         } else {
-            // Handle hit areas shrink with the selection so small selections can still be moved and drawn in.
-            let reach = min(10, min(selection.width, selection.height) / 4)
-            if let h = Handle.allCases.min(by: { handlePoint($0, of: selection).distance(to: p) < handlePoint($1, of: selection).distance(to: p) }),
-               handlePoint(h, of: selection).distance(to: p) < reach {
-                return .resize(h, selection)
-            }
             guard selection.contains(p) else { return .create(previous: selection, phase: phase) }
         }
         if let l = label(at: p) { return .moveLabel(l.id, l.points[0]) }
@@ -537,8 +540,27 @@ final class Session {
     /// Screen point on the background preview -> the same spot on the frozen screen, where annotations live.
     func fromPreview(_ p: CGPoint) -> CGPoint {
         guard style.enabled, phase == .editing else { return p }
-        let f = previewFrame, k = f.width / canvas.width, o = shotOrigin
-        return CGPoint(x: shotArea.minX + (p.x - f.minX) / k - o.x, y: shotArea.minY + (p.y - f.minY) / k - o.y)
+        let m = previewMapping
+        return CGPoint(x: m.area.x + (p.x - m.frame.minX) / m.k - m.origin.x, y: m.area.y + (p.y - m.frame.minY) / m.k - m.origin.y)
+    }
+
+    /// Held for the length of a drag on the preview: resizing re-lays the preview out, which must not move the cursor's spot.
+    @ObservationIgnored private var heldMapping: (frame: CGRect, k: CGFloat, origin: CGPoint, area: CGPoint)?
+    private var previewMapping: (frame: CGRect, k: CGFloat, origin: CGPoint, area: CGPoint) {
+        if let heldMapping { return heldMapping }
+        let f = previewFrame
+        return (f, f.width / canvas.width, shotOrigin, shotArea.origin)
+    }
+
+    /// A drag on the overlay, in screen points.
+    func previewDragChanged(from a: CGPoint, to b: CGPoint) {
+        if heldMapping == nil, style.enabled, phase == .editing { heldMapping = previewMapping }
+        dragChanged(from: fromPreview(a), to: fromPreview(b))
+    }
+
+    func previewDragEnded(from a: CGPoint, to b: CGPoint) {
+        dragEnded(from: fromPreview(a), to: fromPreview(b))
+        heldMapping = nil
     }
 
     /// The inverse of `fromPreview`, and the preview's scale: where a label being typed shows, and how big.
